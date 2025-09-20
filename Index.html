@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadolar - Compacta</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+```
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #1a1a1a;
+        padding: 10px;
+        margin: 0;
+        font-size: 13px;
+    }
+    
+    .container {
+        max-width: 240px;
+        margin: 0 auto;
+        background: #2d2d2d;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        overflow: hidden;
+        border: 1px solid #404040;
+    }
+
+    /* Media Queries para responsividad */
+    @media (max-width: 375px) {
+        .container { 
+            max-width: 220px; 
+            font-size: 11px; 
+        }
+        body { font-size: 11px; }
+    }
+
+    @media (min-width: 376px) and (max-width: 414px) {
+        .container { 
+            max-width: 260px; 
+            font-size: 13px; 
+        }
+        body { font-size: 13px; }
+    }
+
+    @media (min-width: 415px) and (max-width: 768px) {
+        .container { 
+            max-width: 320px; 
+            font-size: 15px; 
+        }
+        body { font-size: 15px; }
+    }
+
+    @media (min-width: 769px) {
+        .container { 
+            max-width: 400px; 
+            font-size: 16px; 
+        }
+        body { font-size: 16px; }
+    }
+    
+    .header {
+        background: linear-gradient(135deg, #5A0A0A 0%, #2c3e50 100%);
+        color: white;
+        padding: 8px;
+        text-align: left;
+        font-size: 1.0em;
+        font-weight: 600;
+    }
+    
+    .tasas-section {
+        padding: 8px;
+        background: #383838;
+    }
+    
+    .tasa-row {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 2px 0;
+        border-bottom: 1px solid #555555;
+        gap: 10px;
+    }
+    
+    .tasa-row:last-child {
+        border-bottom: none;
+    }
+    
+    .tasa-label {
+        font-weight: 500;
+        color: #e0e0e0;
+        font-size: 11px;
+        min-width: 65px;
+        flex-shrink: 0;
+    }
+    
+    .tasa-valor {
+        font-weight: 600;
+        color: #e74c3c;
+        font-family: monospace;
+    }
+    
+    .tasa-input {
+        width: 60px;
+        padding: 3px 6px;
+        border: 1px solid #555555;
+        border-radius: 4px;
+        text-align: right;
+        font-family: monospace;
+        font-size: 12px;
+        background: #404040;
+        color: #ffffff;
+    }
+    
+    .tasa-input:focus {
+        outline: none;
+        border-color: #5A0A0A;
+        box-shadow: 0 0 0 2px rgba(90, 10, 10, 0.3);
+    }
+    
+    .tabla-comparacion {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 11px;
+    }
+    
+    .tabla-comparacion th {
+        background: #34495e;
+        color: white;
+        padding: 6px 3px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 9px;
+    }
+    
+    .tabla-comparacion td {
+        padding: 6px 3px;
+        text-align: center;
+        border-bottom: 1px solid #555555;
+        font-family: monospace;
+        font-size: 10px;
+        background: #2d2d2d;
+        color: #ffffff;
+    }
+    
+    .concepto {
+        text-align: left !important;
+        font-weight: 600;
+        color: #e0e0e0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+    
+    .calculado {
+        background: #f9f9f9;
+        color: #666;
+    }
+    
+    .diferencia {
+        background: #ffebee;
+        color: #d32f2f;
+        font-weight: 600;
+    }
+    
+    .input-cell {
+        padding: 3px !important;
+    }
+    
+    .input-cell input {
+        width: 100%;
+        border: 1px solid #ced4da;
+        background: white;
+        text-align: center;
+        font-family: monospace;
+        font-weight: 600;
+        color: #2c3e50;
+        padding: 6px 4px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+    
+    .input-cell input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+    
+    .tasa-real-normal {
+        color: #28a745;
+    }
+    
+    .tasa-real-alta {
+        color: #ffc107;
+        font-weight: 700;
+    }
+    
+    .tasa-real-critica {
+        color: #dc3545;
+        font-weight: 700;
+        animation: parpadeo 1s infinite;
+    }
+    
+    .icono-verde {
+        color: #28a745;
+    }
+    
+    .icono-amarillo {
+        color: #ffc107;
+    }
+    
+    .icono-rojo {
+        color: #dc3545;
+        animation: parpadeo 1s infinite;
+    }
+    
+    @keyframes parpadeo {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0.3; }
+    }
+
+    .status-message {
+        font-size: 7px;
+        color: #666;
+        margin-top: 3px;
+        text-align: left;
+    }
+
+    .timestamp {
+        font-size: 6px;
+        color: #999999;
+        text-align: left;
+        margin-top: 5px;
+        font-style: italic;
+    }
+</style>
+```
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            Calculadolar-V1.0
+        </div>
+
+```
+    <div class="tasas-section">
+        <div class="timestamp" id="timestampBCV" style="margin-bottom: 5px;">Última actualización BCV: --</div>
+        <div class="tasa-row">
+            <span class="tasa-label">Tasa BCV</span>
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <input type="text" class="tasa-input" id="tasaBCV" value="154.01" placeholder="0.00">
+                <span style="font-size: 10px; color: #cccccc;">Bs/$</span>
+            </div>
+        </div>
+        <div class="tasa-row">
+            <span class="tasa-label">Tasa de Venta</span>
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <input type="text" class="tasa-input" id="tasaParalelo" value="" placeholder="0.00">
+                <span style="font-size: 10px; color: #cccccc;">Bs/$</span>
+            </div>
+        </div>
+        <div style="border-top: 1px solid #555555; margin: 6px 0 3px 0;"></div>
+        <div class="tasa-row" style="min-height: 20px;">
+            <span class="tasa-label" style="font-size: 10px; text-transform: none; line-height: 1.2; min-width: 95px;">
+                Tasa de Pago en Bs
+            </span>
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <span id="iconoEstado" style="font-size: 11px;" class=""></span>
+                <span class="tasa-valor" id="tasaReal" style="font-size: 11px;"></span>
+                <span style="font-size: 8px; color: #cccccc;" id="unidadTasaReal"></span>
+            </div>
+        </div>
+        <div class="status-message" id="statusMessage" style="display: none;"></div>
+    </div>
+    
+    <table class="tabla-comparacion">
+        <tbody>
+            <tr>
+                <td class="concepto">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Precio de Pago en $</span>
+                        <div style="display: flex; align-items: center; gap: 2px;">
+                            <input type="checkbox" id="descuentoToggle" style="transform: scale(0.7);">
+                            <span style="font-size: 8px; color: #cccccc;">Descuento</span>
+                            <input type="number" id="descuentoInput" value="30" min="0" max="100" step="1" 
+                                   style="width: 25px; padding: 1px; border: 1px solid #555555; border-radius: 3px; text-align: center; font-size: 8px; background: #404040; color: #ffffff; margin-left: 2px;">
+                            <span style="font-size: 8px; color: #cccccc;">%</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 3px; margin-top: 2px;">
+                        <input type="text" id="precioDolares" value="" placeholder="0.00" style="width: 55px; padding: 4px; border: 1px solid #555555; border-radius: 4px; font-size: 11px; text-align: right; background: #404040; color: #ffffff;">
+                        <span style="font-size: 11px; color: #cccccc; font-weight: 600;">$</span>
+                        <div id="descuentoLabel" style="font-size: 6px; color: #4CAF50; margin-left: 5px; flex-grow: 1; line-height: 1.1;"></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="concepto">
+                    Precio de Pago en Bs
+                    <br>
+                    <select id="tipoMonedaBolivares" style="margin-top: 3px; padding: 3px 4px; border: 1px solid #555555; border-radius: 4px; font-size: 10px; background: #404040; color: #ffffff;">
+                        <option value="usd">Me dan precio en $</option>
+                        <option value="bs">Me dan precio en Bs</option>
+                    </select>
+                    <div style="display: flex; align-items: flex-start; gap: 3px; margin-top: 3px;">
+                        <input type="text" id="precioBolivares" value="" placeholder="0.00" style="width: 55px; padding: 4px; border: 1px solid #555555; border-radius: 4px; font-size: 11px; text-align: right; background: #404040; color: #ffffff;">
+                        <span style="font-size: 11px; color: #cccccc; font-weight: 600;" id="unidadPrecioBolivares">$</span>
+                        <div id="conversionesBolivares" style="font-size: 6px; color: #cccccc; line-height: 1.1; flex-grow: 1; margin-left: 3px;"></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="concepto diferencia" style="padding: 6px 3px; min-height: 30px;">
+                    <div id="areaDiferencia" style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; font-size: 10px; min-height: 18px;">
+                        <!-- Espacio reservado para la diferencia -->
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+```
+
+<script>
+    // Elementos del DOM
+    const tasaBCVInput = document.getElementById('tasaBCV');
+    const tasaParaleloInput = document.getElementById('tasaParalelo');
+    const tasaRealDisplay = document.getElementById('tasaReal');
+    const unidadTasaReal = document.getElementById('unidadTasaReal');
+    const iconoEstado = document.getElementById('iconoEstado');
+    const precioDolaresInput = document.getElementById('precioDolares');
+    const precioBolivaresInput = document.getElementById('precioBolivares');
+    const tipoMonedaBolivares = document.getElementById('tipoMonedaBolivares');
+    const unidadPrecioBolivares = document.getElementById('unidadPrecioBolivares');
+    const descuentoToggle = document.getElementById('descuentoToggle');
+    const descuentoInput = document.getElementById('descuentoInput');
+    const statusMessage = document.getElementById('statusMessage');
+    
+    // Variables para guardar últimas tasas válidas
+    let ultimaTasaBCV = 154.01;
+    let ultimaTasaParalelo = null;
+    let ultimaActualizacionBCV = null;
+    
+    // Variables para manejo del descuento
+    let precioOriginalDolares = null;
+    let descuentoActivo = false;
+    
+    const porcentajeDiferencia = document.getElementById('porcentajeDiferencia');
+    
+    function formatNumber(num, decimals = 2) {
+        return num.toLocaleString('es-VE', { 
+            minimumFractionDigits: decimals, 
+            maximumFractionDigits: decimals 
+        });
+    }
+    
+    function setStatus(message, isError = false) {
+        // Los mensajes de estado ya no se muestran para mayor discreción
+        return;
+    }
+    
+    function updateTimestamp() {
+        const now = new Date();
+        const timestamp = now.toLocaleString('es-VE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('timestampBCV').textContent = `Última actualización BCV: ${timestamp}`;
+        ultimaActualizacionBCV = now;
+    }
+    
+    function actualizarConversiones() {
+        const tasaBCV = parseFloat(tasaBCVInput.value);
+        const tasaParalelo = parseFloat(tasaParaleloInput.value);
+        const precioBolivares = parseFloat(precioBolivaresInput.value);
+        const tipoMoneda = tipoMonedaBolivares.value;
+        const conversionesDiv = document.getElementById('conversionesBolivares');
+        
+        if (!tasaBCV || !tasaParalelo || !precioBolivares || precioBolivares <= 0) {
+            conversionesDiv.innerHTML = '';
+            return;
+        }
+        
+        let html = '';
+        
+        if (tipoMoneda === 'usd') {
+            // Me dan precio en $, mostrar conversiones a Bs
+            const bsBCV = precioBolivares * tasaBCV;
+            const bsVenta = precioBolivares * tasaParalelo;
+            
+            // Calcular cuántos dólares necesito vender en tasa de venta para conseguir los Bs oficiales
+            const dolaresParaVender = bsBCV / tasaParalelo;
+            
+            html = `${formatNumber(bsBCV, 2)} Bs (oficial)<br>${formatNumber(bsVenta, 2)} Bs (venta)<br>`;
+            html += `<span style="color: #4CAF50;">Vender $${formatNumber(dolaresParaVender, 2)}</span>`;
+        } else {
+            // Me dan precio en Bs, mostrar conversiones a $
+            const usdBCV = precioBolivares / tasaBCV;
+            const usdVenta = precioBolivares / tasaParalelo;
+            
+            // Calcular cuántos dólares necesito cambiar en tasa de venta para conseguir esos Bs
+            const dolaresParaCambiar = precioBolivares / tasaParalelo;
+            
+            html = `$${formatNumber(usdBCV, 2)} (oficial)<br>$${formatNumber(usdVenta, 2)} (venta)<br>`;
+            html += `<span style="color: #e67e22;">Cambiar $${formatNumber(dolaresParaCambiar, 2)}</span>`;
+        }
+        
+        conversionesDiv.innerHTML = html;
+    }
+    
+    function actualizarUnidadBolivares() {
+        const tipo = tipoMonedaBolivares.value;
+        unidadPrecioBolivares.textContent = tipo === 'bs' ? 'Bs' : '$';
+        actualizarConversiones();
+        calcular();
+    }
+    
+    function toggleDescuento() {
+        const label = document.getElementById('descuentoLabel');
+        const precioActual = parseFloat(precioDolaresInput.value) || 0;
+        
+        if (descuentoToggle.checked) {
+            // Activar descuento
+            if (precioActual > 0 && !descuentoActivo) {
+                precioOriginalDolares = precioActual;
+                descuentoActivo = true;
+            }
+            
+            if (precioOriginalDolares > 0) {
+                const porcentaje = parseFloat(descuentoInput.value) || 0;
+                const precioConDescuento = precioOriginalDolares * (1 - porcentaje / 100);
+                
+                precioDolaresInput.value = precioConDescuento.toFixed(2);
+                label.innerHTML = `${porcentaje}% descuento<br>era $${precioOriginalDolares.toFixed(2)}`;
+            }
+        } else {
+            // Desactivar descuento
+            if (precioOriginalDolares !== null) {
+                precioDolaresInput.value = precioOriginalDolares.toFixed(2);
+            }
+            label.innerHTML = '';
+            descuentoActivo = false;
+            precioOriginalDolares = null;
+        }
+        
+        calcular();
+    }
+    
+    async function validarTasas() {
+        const valorBCV = tasaBCVInput.value.trim();
+        const tasaBCV = parseFloat(valorBCV);
+        
+        if (!valorBCV || valorBCV === '' || isNaN(tasaBCV) || tasaBCV <= 0) {
+            setStatus('Campo BCV vacío o inválido. Obteniendo tasa actualizada...');
+            await obtenerTasaBCV();
+            
+            const nuevaTasa = parseFloat(tasaBCVInput.value);
+            if (!nuevaTasa || nuevaTasa <= 0 || isNaN(nuevaTasa)) {
+                tasaBCVInput.value = ultimaTasaBCV.toFixed(2);
+                setStatus(`No se pudo actualizar. Tasa BCV restaurada: ${ultimaTasaBCV.toFixed(2)} Bs/$`);
+            }
+        } else {
+            ultimaTasaBCV = tasaBCV;
+        }
+        
+        const valorParalelo = tasaParaleloInput.value.trim();
+        const tasaParalelo = parseFloat(valorParalelo);
+        
+        if (!valorParalelo || valorParalelo === '' || isNaN(tasaParalelo) || tasaParalelo <= 0) {
+            if (ultimaTasaParalelo) {
+                tasaParaleloInput.value = ultimaTasaParalelo.toFixed(2);
+                setStatus(`Tasa de Venta restaurada: ${ultimaTasaParalelo.toFixed(2)} Bs/$`);
+            } else {
+                tasaParaleloInput.value = '';
+                setStatus('Ingrese la tasa de venta manualmente');
+            }
+        } else {
+            ultimaTasaParalelo = tasaParalelo;
+        }
+        
+        actualizarConversiones();
+        calcular();
+    }
+    
+    async function obtenerTasaBCV() {
+        setStatus('Obteniendo tasa BCV...');
+        
+        const apis = [
+            {
+                name: 'DolarApi VE',
+                url: 'https://ve.dolarapi.com/v1/dolares/oficial',
+                parse: (data) => data.promedio
+            },
+            {
+                name: 'GitHub API Venezuela',
+                url: 'https://api.github.com/repos/fcoagz/api-dolar-venezuela/contents/api.json',
+                parse: (data) => {
+                    try {
+                        const content = JSON.parse(atob(data.content));
+                        return content.dolar?.oficial?.promedio;
+                    } catch {
+                        return null;
+                    }
+                }
+            },
+            {
+                name: 'PyDolarVenezuela',
+                url: 'https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv',
+                parse: (data) => data.monitors?.bcv?.price
+            },
+            {
+                name: 'BCV Exchange',
+                url: 'https://bcv-exchange-rates.vercel.app/get_bcv_exchange_rates',
+                parse: (data) => {
+                    if (data.data?.dolar?.value) {
+                        return parseFloat(data.data.dolar.value.replace(',', '.'));
+                    }
+                    return null;
+                }
+            }
+        ];
+        
+        for (const api of apis) {
+            try {
+                setStatus(`Intentando ${api.name}...`);
+                const response = await fetch(api.url);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const tasa = api.parse(data);
+                    
+                    if (tasa && tasa > 0 && tasa < 1000) { // Validación básica
+                        tasaBCVInput.value = tasa.toFixed(2);
+                        ultimaTasaBCV = tasa;
+                        updateTimestamp();
+                        setStatus(`Tasa BCV actualizada: ${tasa.toFixed(2)} Bs/$ (${api.name})`);
+                        actualizarConversiones();
+                        calcular();
+                        return; // Salir al encontrar una tasa válida
+                    }
+                }
+            } catch (error) {
+                console.log(`${api.name} falló:`, error);
+                continue; // Continuar con la siguiente API
+            }
+        }
+        
+        // Si ninguna API funcionó
+        setStatus('No se pudo obtener tasa BCV. Usando valor anterior.', true);
+    }
+    
+    async function obtenerTasaParalelo() {
+        // No obtenemos automáticamente la tasa de venta
+        // El usuario debe ingresarla manualmente
+        return;
+    }
+    
+    function calcular() {
+        const tasaBCV = parseFloat(tasaBCVInput.value);
+        const tasaParalelo = parseFloat(tasaParaleloInput.value);
+        const precioDolares = parseFloat(precioDolaresInput.value);
+        const precioBolivaresInput_val = parseFloat(precioBolivaresInput.value);
+        const tipoMoneda = tipoMonedaBolivares.value;
+        
+        if (!tasaBCV || tasaBCV <= 0) {
+            limpiarResultados();
+            return;
+        }
+        
+        if (!precioDolares || !precioBolivaresInput_val || precioDolares <= 0 || precioBolivaresInput_val <= 0) {
+            limpiarResultados();
+            return;
+        }
+        
+        // Calcular precio en Bs según el tipo de moneda seleccionado
+        let precioBolivaresEnDolares;
+        if (tipoMoneda === 'bs') {
+            precioBolivaresEnDolares = precioBolivaresInput_val / tasaBCV;
+        } else {
+            precioBolivaresEnDolares = precioBolivaresInput_val;
+        }
+        
+        // REGLA DE 3 para Tasa Real:
+        // Si A dólares = tasaBCV bolívares
+        // Entonces B dólares = X bolívares (lo que realmente pago)
+        // Por tanto: tasaReal = (precioBolivaresEnDolares * tasaBCV) / precioDolares
+        const tasaReal = (precioBolivaresEnDolares * tasaBCV) / precioDolares;
+        
+        // Determinar color e icono según la tasa real
+        let claseCSS = 'tasa-valor tasa-real-normal';
+        let icono = '✅';
+        let claseIcono = 'icono-verde';
+        
+        if (tasaParalelo && tasaReal > tasaBCV && tasaReal <= tasaParalelo) {
+            claseCSS = 'tasa-valor tasa-real-alta';
+            icono = '⚠️';
+            claseIcono = 'icono-amarillo';
+        } else if (tasaParalelo && tasaReal > tasaParalelo) {
+            claseCSS = 'tasa-valor tasa-real-critica';
+            icono = '🚨';
+            claseIcono = 'icono-rojo';
+        } else if (tasaReal > tasaBCV) {
+            claseCSS = 'tasa-valor tasa-real-alta';
+            icono = '⚠️';
+            claseIcono = 'icono-amarillo';
+        }
+        
+        tasaRealDisplay.className = claseCSS;
+        tasaRealDisplay.textContent = formatNumber(tasaReal, 2);
+        unidadTasaReal.textContent = 'Bs/$';
+        iconoEstado.textContent = icono;
+        iconoEstado.className = claseIcono;
+        
+        // DIFERENCIA: Calcular diferencia en dólares y porcentaje
+        const diferenciaDolares = precioBolivaresEnDolares - precioDolares;
+        const porcentajeDiferenciaCalc = (diferenciaDolares / precioDolares) * 100;
+        
+        // Actualizar área de diferencia
+        actualizarAreaDiferencia(diferenciaDolares, porcentajeDiferenciaCalc);
+    }
+    
+    function limpiarResultados() {
+        tasaRealDisplay.textContent = '';
+        tasaRealDisplay.className = 'tasa-valor';
+        unidadTasaReal.textContent = '';
+        iconoEstado.textContent = '';
+        iconoEstado.className = '';
+        
+        // Limpiar área de diferencia
+        const areaDiferencia = document.getElementById('areaDiferencia');
+        areaDiferencia.innerHTML = '';
+    }
+    
+    function actualizarAreaDiferencia(diferenciaDolares, porcentajeDiferencia) {
+        const areaDiferencia = document.getElementById('areaDiferencia');
+        
+        if (!diferenciaDolares || diferenciaDolares === 0) {
+            areaDiferencia.innerHTML = '';
+            return;
+        }
+        
+        const color = diferenciaDolares >= 0 ? '#ff6b6b' : '#4CAF50';
+        
+        areaDiferencia.innerHTML = `
+            <span style="color: #e0e0e0; font-size: 9px;">Diferencia:</span>
+            <span style="color: ${color}; font-weight: 600; font-size: 9px;">
+                $${Math.abs(diferenciaDolares).toFixed(2)}
+            </span>
+            <span style="color: ${color}; font-weight: 600; font-size: 9px;">
+                (${Math.round(Math.abs(porcentajeDiferencia))}%)
+            </span>
+        `;
+    }
+    
+    // ============================================
+    // FORMATO AUTOMÁTICO PARA CAMPOS DE PRECIO
+    // ============================================
+    function formatearPrecio(input) {
+        // Obtener solo números
+        let valor = input.value.replace(/[^\d]/g, '');
+        
+        // Si está vacío, no hacer nada
+        if (valor === '') {
+            input.value = '';
+            return '';
+        }
+        
+        // Convertir a número y dividir por 100 para obtener decimales
+        let numero = parseInt(valor) / 100;
+        
+        // Formatear con 2 decimales
+        let formateado = numero.toFixed(2);
+        
+        // Actualizar el campo
+        input.value = formateado;
+        
+        return parseFloat(formateado);
+    }
+    
+    function configurarFormateoAutomatico(input) {
+        input.addEventListener('input', function(e) {
+            // Guardar posición del cursor
+            let cursorPos = e.target.selectionStart;
+            let valorAnterior = e.target.value;
+            
+            // Formatear
+            formatearPrecio(e.target);
+            
+            // Restaurar cursor al final si es necesario
+            let valorNuevo = e.target.value;
+            if (valorNuevo.length >= valorAnterior.length) {
+                e.target.setSelectionRange(valorNuevo.length, valorNuevo.length);
+            }
+            
+            // Actualizar conversiones y cálculos
+            if (e.target.id === 'precioDolares') {
+                if (descuentoActivo) {
+                    descuentoToggle.checked = false;
+                    descuentoActivo = false;
+                    precioOriginalDolares = null;
+                    document.getElementById('descuentoLabel').style.display = 'none';
+                }
+                calcular();
+            } else if (e.target.id === 'precioBolivares') {
+                actualizarConversiones();
+                calcular();
+            }
+        });
+        
+        // También manejar pegado
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            let pegado = (e.clipboardData || window.clipboardData).getData('text');
+            let soloNumeros = pegado.replace(/[^\d]/g, '');
+            if (soloNumeros) {
+                e.target.value = soloNumeros;
+                formatearPrecio(e.target);
+                if (e.target.id === 'precioBolivares') {
+                    actualizarConversiones();
+                }
+                calcular();
+            }
+        });
+        
+        // Manejar foco - seleccionar todo el texto
+        input.addEventListener('focus', function(e) {
+            setTimeout(() => {
+                e.target.select();
+            }, 10);
+        });
+    }
+    
+    function configurarFormateoTasas(input) {
+        input.addEventListener('focus', function(e) {
+            // Al hacer focus, si hay valor, limpiarlo para empezar de 0.00
+            if (e.target.value && e.target.value !== '0.00') {
+                e.target.value = '';
+            }
+        });
+        
+        input.addEventListener('input', function(e) {
+            // Formatear como precio
+            formatearPrecio(e.target);
+            
+            // Actualizar conversiones y cálculos
+            actualizarConversiones();
+            calcular();
+        });
+        
+        input.addEventListener('blur', async function(e) {
+            const valor = e.target.value.trim();
+            if (!valor || valor === '' || valor === '0.00') {
+                if (e.target.id === 'tasaBCV') {
+                    await validarTasas();
+                }
+            }
+        });
+        
+        // También manejar pegado
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            let pegado = (e.clipboardData || window.clipboardData).getData('text');
+            let soloNumeros = pegado.replace(/[^\d]/g, '');
+            if (soloNumeros) {
+                e.target.value = soloNumeros;
+                formatearPrecio(e.target);
+                actualizarConversiones();
+                calcular();
+            }
+        });
+    }
+    
+    // Event listeners
+    // Configurar formateo automático para tasas
+    configurarFormateoTasas(tasaBCVInput);
+    configurarFormateoTasas(tasaParaleloInput);
+    
+    // Configurar formateo automático para campos de precio
+    configurarFormateoAutomatico(precioDolaresInput);
+    configurarFormateoAutomatico(precioBolivaresInput);
+    
+    tipoMonedaBolivares.addEventListener('change', actualizarUnidadBolivares);
+    descuentoToggle.addEventListener('change', toggleDescuento);
+    descuentoInput.addEventListener('input', function() {
+        if (descuentoToggle.checked) {
+            toggleDescuento();
+        }
+    });
+    
+    // Inicialización
+    async function inicializar() {
+        setStatus('Calculadora iniciada. Obteniendo tasa oficial...');
+        await obtenerTasaBCV();
+        actualizarUnidadBolivares();
+    }
+    
+    inicializar();
+</script>
+
+</body>
+</html>
