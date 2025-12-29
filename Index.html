@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora</title>
+    <title>Calculadolar 🇻🇪</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        /* Estilos base para simular iOS y inputs limpios */
-        body { background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; user-select: none; }
+        /* Eliminar flechas de inputs numéricos */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .ios-btn:active { opacity: 0.7; }
+        .ios-btn:active { opacity: 0.7; transform: scale(0.98); }
+        /* Animación suave para el historial */
+        .accordion-content { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out; max-height: 0; opacity: 0; overflow: hidden; }
+        .accordion-content.open { max-height: 300px; opacity: 1; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-black">
@@ -22,9 +25,8 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
-        // Colores configurados
         const COLORS = {
             vinotinto: '#800020',
             iosOrange: '#ff9f0a',
@@ -33,16 +35,15 @@
         };
 
         const App = () => {
-            // Estado de la vista: 'calculator' o 'tool'
-            const [viewMode, setViewMode] = useState('calculator'); 
+            const [viewMode, setViewMode] = useState('calculator'); // 'calculator' | 'tool'
             
-            // Estado Calculadora
+            // --- ESTADO CALCULADORA ---
             const [calcDisplay, setCalcDisplay] = useState('0');
             const [waitingForOperand, setWaitingForOperand] = useState(false);
             const [operator, setOperator] = useState(null);
             const [value, setValue] = useState(null);
 
-            // Estado Herramienta
+            // --- ESTADO HERRAMIENTA ---
             const [rates, setRates] = useState({
                 bcv: 46.20,
                 paralelo: 54.50,
@@ -53,14 +54,16 @@
 
             const [inputs, setInputs] = useState({
                 priceDollar: '',
-                priceBs: '',
+                payAmount: '', // "Me piden..."
+                currency: 'Bs', // Dropdown Bs/$
                 customBcv: '',
                 customParalelo: ''
             });
 
-            const [loading, setLoading] = useState(false);
+            const [showHistory, setShowHistory] = useState(false);
+            const [log, setLog] = useState([]); // Historial simulado
 
-            // DETECTOR DE CÓDIGO SECRETO
+            // --- LÓGICA CAMUFLAJE ---
             useEffect(() => {
                 if (calcDisplay === '676767') {
                     setTimeout(() => {
@@ -68,11 +71,11 @@
                         setCalcDisplay('0');
                         setValue(null);
                         setOperator(null);
-                    }, 300);
+                    }, 200);
                 }
             }, [calcDisplay]);
 
-            // --- LÓGICA CALCULADORA ---
+            // --- FUNCIONES CALCULADORA ---
             const inputDigit = (digit) => {
                 if (waitingForOperand) {
                     setCalcDisplay(String(digit));
@@ -107,208 +110,264 @@
             };
 
             const clearCalc = () => {
-                setCalcDisplay('0');
-                setValue(null);
-                setOperator(null);
-                setWaitingForOperand(false);
+                setCalcDisplay('0'); setValue(null); setOperator(null); setWaitingForOperand(false);
             };
 
-            // --- LÓGICA HERRAMIENTA ---
-            const handleFetchRates = () => {
-                setLoading(true);
-                setTimeout(() => {
-                    // Simulación de actualización
-                    setRates(prev => ({
-                        ...prev,
-                        bcv: (prev.bcv + 0.05).toFixed(2) * 1,
-                        paralelo: (prev.paralelo + 0.10).toFixed(2) * 1
-                    }));
-                    setLoading(false);
-                }, 800);
-            };
-
+            // --- FUNCIONES HERRAMIENTA ---
+            
+            // Determinar tasas activas (si el usuario escribe, usa su valor, si borra, usa la API)
             const activeBcv = inputs.customBcv !== '' ? parseFloat(inputs.customBcv) : rates.bcv;
             const activeParalelo = inputs.customParalelo !== '' ? parseFloat(inputs.customParalelo) : rates.paralelo;
 
+            // Manejo de "Si vacío, restaurar"
+            const handleRateBlur = (field) => {
+                // Si el usuario deja el campo vacío, simplemente limpiamos el custom para que tome el default (API)
+                // Visualmente parecerá que "regresa" el valor original
+                if (inputs[field] === '' || isNaN(parseFloat(inputs[field]))) {
+                    setInputs(prev => ({ ...prev, [field]: '' }));
+                }
+            };
+
+            const handleFetchRates = () => {
+                const btn = document.getElementById('fetch-btn');
+                if(btn) btn.classList.add('animate-spin');
+                setTimeout(() => {
+                    setRates(prev => ({
+                        ...prev,
+                        bcv: (prev.bcv + 0.05).toFixed(2) * 1,
+                        paralelo: (prev.paralelo + 0.12).toFixed(2) * 1
+                    }));
+                    if(btn) btn.classList.remove('animate-spin');
+                }, 800);
+            };
+
+            const saveLog = () => {
+                if (tasaImplicita > 0) {
+                    const newEntry = {
+                        id: Date.now(),
+                        date: new Date().toLocaleTimeString(),
+                        price: inputs.priceDollar,
+                        paid: inputs.payAmount,
+                        currency: inputs.currency,
+                        rate: tasaImplicita.toFixed(2)
+                    };
+                    setLog([newEntry, ...log]);
+                    setShowHistory(true); // Abrir historial al guardar
+                }
+            };
+
+            // CÁLCULO CENTRAL
             let tasaImplicita = 0;
-            if (inputs.priceDollar && inputs.priceBs) {
-                tasaImplicita = parseFloat(inputs.priceBs) / parseFloat(inputs.priceDollar);
+            const precioDolar = parseFloat(inputs.priceDollar);
+            const cantidadPagar = parseFloat(inputs.payAmount);
+
+            if (precioDolar && cantidadPagar) {
+                if (inputs.currency === 'Bs') {
+                    // Si me piden Bs, Tasa = Bs / $
+                    tasaImplicita = cantidadPagar / precioDolar;
+                } else {
+                    // Si me piden $, es un cálculo de sobreprecio directo en divisa, 
+                    // pero para mantener la consistencia de "Tasa", convertimos a Bs con paralelo
+                    // Ojo: Si me piden $12 por algo de $10, la tasa implicita es virtual.
+                    // Asumiremos lógica estándar: Tasa Implícita = (MontoPagarEnDivisa * Paralelo) / PrecioBase
+                    // O simplemente mostramos la diferencia porcentual. 
+                    // Para simplificar según tu uso anterior: Tasa Implícita suele ser Bs/$.
+                    // Si seleccionan USD, asumimos que quieren ver el ratio simple.
+                    tasaImplicita = (cantidadPagar / precioDolar) * activeParalelo; 
+                }
             }
 
-            // Componente Botón Calculadora
-            const CalcButton = ({ label, type = 'num', onClick, double = false }) => {
-                let bg = COLORS.iosDarkGray;
-                let text = 'white';
-                if (type === 'orange') { bg = COLORS.iosOrange; }
-                if (type === 'top') { bg = COLORS.iosLightGray; text = 'black'; }
-
+            // --- RENDER ---
+            
+            // Componente Botón Calc
+            const CalcBtn = ({ l, type, onClick, d }) => {
+                let bg = type === 'o' ? COLORS.iosOrange : type === 't' ? COLORS.iosLightGray : COLORS.iosDarkGray;
+                let txt = type === 't' ? 'black' : 'white';
                 return (
-                    <button 
-                        onClick={onClick}
-                        className={`ios-btn ${double ? 'col-span-2' : ''} h-16 w-full rounded-full flex items-center justify-center text-3xl font-medium transition-opacity`}
-                        style={{ backgroundColor: bg, color: text }}
-                    >
-                        {label}
+                    <button onClick={onClick} className={`ios-btn ${d ? 'col-span-2' : ''} h-16 w-full rounded-full flex items-center justify-center text-3xl font-medium`} style={{backgroundColor: bg, color: txt}}>
+                        {l}
                     </button>
                 );
             };
 
-            // --- VISTA CALCULADORA ---
             if (viewMode === 'calculator') {
                 return (
-                    <div className="flex flex-col items-center justify-end h-[650px] w-[360px] bg-black text-white p-5 rounded-[40px] shadow-2xl border border-gray-800 relative overflow-hidden">
-                        
-                        {/* Pantalla */}
-                        <div className="w-full h-32 flex items-end justify-end px-2 mb-4">
+                    <div className="flex flex-col items-center justify-end h-[680px] w-[375px] bg-black text-white p-5 rounded-[40px] shadow-2xl border border-gray-800 relative overflow-hidden">
+                        <div className="w-full h-32 flex items-end justify-end px-4 mb-4">
                             <span className="text-7xl font-light tracking-tight truncate">{calcDisplay}</span>
                         </div>
-
-                        {/* Teclado */}
                         <div className="w-full grid grid-cols-4 gap-3">
-                            <CalcButton label="AC" type="top" onClick={clearCalc} />
-                            <CalcButton label="+/-" type="top" onClick={() => {}} />
-                            <CalcButton label="%" type="top" onClick={() => {}} />
-                            <CalcButton label="÷" type="orange" onClick={() => performOperation('/')} />
-
-                            <CalcButton label="7" onClick={() => inputDigit(7)} />
-                            <CalcButton label="8" onClick={() => inputDigit(8)} />
-                            <CalcButton label="9" onClick={() => inputDigit(9)} />
-                            <CalcButton label="×" type="orange" onClick={() => performOperation('*')} />
-
-                            <CalcButton label="4" onClick={() => inputDigit(4)} />
-                            <CalcButton label="5" onClick={() => inputDigit(5)} />
-                            <CalcButton label="6" onClick={() => inputDigit(6)} />
-                            <CalcButton label="-" type="orange" onClick={() => performOperation('-')} />
-
-                            <CalcButton label="1" onClick={() => inputDigit(1)} />
-                            <CalcButton label="2" onClick={() => inputDigit(2)} />
-                            <CalcButton label="3" onClick={() => inputDigit(3)} />
-                            <CalcButton label="+" type="orange" onClick={() => performOperation('+')} />
-
-                            <CalcButton label="0" double onClick={() => inputDigit(0)} />
-                            <CalcButton label="." onClick={() => inputDigit('.')} />
-                            <CalcButton label="=" type="orange" onClick={() => performOperation('=')} />
+                            <CalcBtn l="AC" type="t" onClick={clearCalc} />
+                            <CalcBtn l="+/-" type="t" onClick={()=>{}} />
+                            <CalcBtn l="%" type="t" onClick={()=>{}} />
+                            <CalcBtn l="÷" type="o" onClick={() => performOperation('/')} />
+                            <CalcBtn l="7" onClick={() => inputDigit(7)} />
+                            <CalcBtn l="8" onClick={() => inputDigit(8)} />
+                            <CalcBtn l="9" onClick={() => inputDigit(9)} />
+                            <CalcBtn l="×" type="o" onClick={() => performOperation('*')} />
+                            <CalcBtn l="4" onClick={() => inputDigit(4)} />
+                            <CalcBtn l="5" onClick={() => inputDigit(5)} />
+                            <CalcBtn l="6" onClick={() => inputDigit(6)} />
+                            <CalcBtn l="-" type="o" onClick={() => performOperation('-')} />
+                            <CalcBtn l="1" onClick={() => inputDigit(1)} />
+                            <CalcBtn l="2" onClick={() => inputDigit(2)} />
+                            <CalcBtn l="3" onClick={() => inputDigit(3)} />
+                            <CalcBtn l="+" type="o" onClick={() => performOperation('+')} />
+                            <CalcBtn l="0" d onClick={() => inputDigit(0)} />
+                            <CalcBtn l="," onClick={() => inputDigit('.')} />
+                            <CalcBtn l="=" type="o" onClick={() => performOperation('=')} />
                         </div>
                     </div>
                 );
             }
 
-            // --- VISTA HERRAMIENTA ---
             return (
-                <div className="flex flex-col h-[650px] w-[360px] bg-[#121212] text-white rounded-[40px] shadow-2xl relative border border-gray-800 p-5 font-sans">
+                <div className="flex flex-col h-[680px] w-[375px] bg-[#121212] text-white rounded-[40px] shadow-2xl relative border border-gray-800 p-5 font-sans overflow-hidden">
                     
-                    {/* Botón Salir (Camuflaje) */}
-                    <button 
-                        onClick={() => setViewMode('calculator')}
-                        className="absolute top-5 right-5 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-red-500 z-50 transition-colors"
-                    >
-                        {/* Icono X SVG */}
+                    {/* Botón Salir */}
+                    <button onClick={() => setViewMode('calculator')} className="absolute top-5 right-5 p-2 rounded-full bg-gray-800 text-red-500 z-50 hover:bg-gray-700">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
 
                     {/* Header */}
-                    <div className="flex items-center gap-3 mb-1 mt-2">
+                    <div className="flex items-center gap-3 mt-2 mb-1">
                         <h1 className="text-2xl font-bold text-red-600 tracking-tight">Calculadolar 🇻🇪</h1>
-                        <button 
-                            onClick={handleFetchRates}
-                            className={`p-2 bg-gray-800 rounded-full text-gray-300 ${loading ? 'animate-spin' : ''}`}
-                        >
-                            {/* Icono Refresh SVG */}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        <button id="fetch-btn" onClick={handleFetchRates} className="p-2 bg-gray-800 rounded-full text-gray-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
                         </button>
                     </div>
 
-                    {/* Ticker Referencial */}
-                    <div className="flex gap-4 text-sm text-yellow-500/90 mb-8 font-mono overflow-x-auto whitespace-nowrap pb-2 border-b border-gray-800">
-                        <span>EUR: {rates.euro}</span> •
-                        <span>BIN: {rates.binance}</span> •
-                        <span>PROM: {rates.promedio}</span>
+                    {/* Ticker Tasas */}
+                    <div className="flex gap-4 text-xs font-mono text-yellow-500/90 mb-6 overflow-x-auto pb-2 border-b border-gray-800 whitespace-nowrap">
+                        <span>EUR: {rates.euro}</span> • <span>BIN: {rates.binance}</span> • <span>PROM: {rates.promedio}</span>
                     </div>
 
-                    {/* Cuerpo Principal */}
-                    <div className="flex flex-col gap-5">
+                    {/* GRID PRINCIPAL */}
+                    <div className="flex flex-col gap-4">
                         
-                        {/* Fila 1: Tasas */}
+                        {/* Fila 1: Tasas Editables */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-green-500 font-semibold ml-1">Tasa BCV</label>
+                                <label className="text-xs text-green-500 font-bold ml-1">Tasa BCV</label>
                                 <input 
                                     type="number" 
                                     placeholder={rates.bcv}
                                     value={inputs.customBcv}
                                     onChange={(e) => setInputs({...inputs, customBcv: e.target.value})}
-                                    className="w-full bg-[#1c1c1e] border border-green-600 text-green-500 p-4 rounded-xl focus:outline-none focus:ring-1 focus:ring-green-500 text-xl font-bold placeholder-green-500/30 text-center"
+                                    onBlur={() => handleRateBlur('customBcv')}
+                                    className="w-full bg-[#1c1c1e] border border-green-600 text-green-500 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-green-500 text-xl font-bold placeholder-green-500/50 text-center"
                                 />
                             </div>
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-red-500 font-semibold ml-1">Tasa Paralelo</label>
+                                <label className="text-xs text-red-500 font-bold ml-1">Tasa Paralelo</label>
                                 <input 
                                     type="number" 
                                     placeholder={rates.paralelo}
                                     value={inputs.customParalelo}
                                     onChange={(e) => setInputs({...inputs, customParalelo: e.target.value})}
-                                    className="w-full bg-[#1c1c1e] border border-red-600 text-red-500 p-4 rounded-xl focus:outline-none focus:ring-1 focus:ring-red-500 text-xl font-bold placeholder-red-500/30 text-center"
+                                    onBlur={() => handleRateBlur('customParalelo')}
+                                    className="w-full bg-[#1c1c1e] border border-red-600 text-red-500 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-red-500 text-xl font-bold placeholder-red-500/50 text-center"
                                 />
                             </div>
                         </div>
 
-                        {/* Fila 2: Precios */}
+                        {/* Fila 2: Inputs Precios con Dropdown */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-gray-400 ml-1">Precio Marcado ($)</label>
                                 <input 
                                     type="number" 
+                                    placeholder="10"
                                     value={inputs.priceDollar}
                                     onChange={(e) => setInputs({...inputs, priceDollar: e.target.value})}
-                                    className="w-full bg-[#2c2c2e] border border-gray-700 text-white p-4 rounded-xl focus:outline-none focus:border-gray-500 text-xl text-center placeholder-gray-600"
-                                    placeholder="10"
+                                    className="w-full bg-[#2c2c2e] border border-gray-700 text-white p-3 rounded-xl focus:outline-none focus:border-gray-500 text-xl text-center"
                                 />
                             </div>
+                            
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-gray-400 ml-1">Me piden... (Bs)</label>
-                                <input 
-                                    type="number" 
-                                    value={inputs.priceBs}
-                                    onChange={(e) => setInputs({...inputs, priceBs: e.target.value})}
-                                    className="w-full bg-[#2c2c2e] border border-gray-700 text-white p-4 rounded-xl focus:outline-none focus:border-gray-500 text-xl text-center placeholder-gray-600"
-                                    placeholder="500"
-                                />
+                                <label className="text-xs text-gray-400 ml-1">Me piden...</label>
+                                <div className="flex h-[54px] bg-[#2c2c2e] border border-gray-700 rounded-xl overflow-hidden focus-within:border-gray-500">
+                                    {/* Dropdown Incorporado */}
+                                    <select 
+                                        value={inputs.currency}
+                                        onChange={(e) => setInputs({...inputs, currency: e.target.value})}
+                                        className="bg-[#3a3a3c] text-white px-2 text-sm font-bold border-r border-gray-600 outline-none appearance-none text-center min-w-[50px]"
+                                    >
+                                        <option value="Bs">Bs</option>
+                                        <option value="$">$</option>
+                                    </select>
+                                    <input 
+                                        type="number" 
+                                        placeholder="500"
+                                        value={inputs.payAmount}
+                                        onChange={(e) => setInputs({...inputs, payAmount: e.target.value})}
+                                        className="w-full bg-transparent text-white p-2 text-xl text-center outline-none"
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         {/* Resultado */}
-                        <div className="mt-2 p-5 rounded-2xl border border-dashed border-gray-700 bg-gray-900/50 flex flex-col items-center justify-center">
-                            <span className="text-xs text-gray-500 uppercase tracking-wider mb-2">Tasa Implícita de Pago</span>
+                        <div className="mt-2 p-4 rounded-2xl border border-dashed border-gray-700 bg-gray-900/50 flex flex-col items-center justify-center min-h-[100px]">
+                            <span className="text-xs text-gray-500 uppercase tracking-wider mb-1">Tasa Implícita</span>
                             {tasaImplicita > 0 ? (
-                                <div className="text-center">
-                                    <div className="text-4xl font-bold text-white mb-1">{tasaImplicita.toFixed(2)}</div>
-                                    <span className="text-sm text-gray-400">Bolívares por Dólar</span>
-                                </div>
+                                <>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-4xl font-bold text-white">{tasaImplicita.toFixed(2)}</span>
+                                        <span className="text-sm text-gray-400">Bs/$</span>
+                                    </div>
+                                    <div className={`mt-2 text-xs px-2 py-0.5 rounded uppercase font-bold tracking-wide ${
+                                        tasaImplicita > activeParalelo ? 'bg-red-900/80 text-red-200' : 
+                                        tasaImplicita < activeBcv ? 'bg-green-900/80 text-green-200' : 
+                                        'bg-yellow-900/80 text-yellow-200'
+                                    }`}>
+                                        {tasaImplicita > activeParalelo ? 'Sobreprecio' : tasaImplicita < activeBcv ? 'Subvaluado' : 'En Rango'}
+                                    </div>
+                                </>
                             ) : (
                                 <span className="text-3xl font-bold text-gray-700">--.--</span>
                             )}
-                            
-                            {tasaImplicita > 0 && (
-                                <div className={`mt-3 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wide ${
-                                    tasaImplicita > activeParalelo ? 'bg-red-900/80 text-red-200' : 
-                                    tasaImplicita < activeBcv ? 'bg-green-900/80 text-green-200' : 
-                                    'bg-yellow-900/80 text-yellow-200'
-                                }`}>
-                                    {tasaImplicita > activeParalelo ? 'Sobreprecio' : 
-                                     tasaImplicita < activeBcv ? 'Subvaluado' : 'En Rango'}
-                                </div>
-                            )}
                         </div>
-                    </div>
 
-                    {/* Footer / Botón Log */}
-                    <div className="mt-auto">
+                        {/* Botón Guardar */}
                         <button 
-                            className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2"
+                            onClick={saveLog}
+                            className="w-full py-3 rounded-xl text-white font-bold shadow-lg active:scale-95 transition-transform"
                             style={{ backgroundColor: COLORS.vinotinto }}
                         >
                             Guardar en Log
                         </button>
+                    </div>
+
+                    {/* Historial (Dropdown inferior) */}
+                    <div className="mt-auto pt-2">
+                        <button 
+                            onClick={() => setShowHistory(!showHistory)}
+                            className="w-full flex items-center justify-between p-3 bg-[#1c1c1e] rounded-xl text-sm text-gray-400 hover:text-white transition-colors border border-gray-800"
+                        >
+                            <span>Historial / Log ({log.length})</span>
+                            <span className={`transform transition-transform ${showHistory ? 'rotate-180' : ''}`}>▼</span>
+                        </button>
+                        
+                        <div className={`accordion-content ${showHistory ? 'open' : ''} bg-[#1c1c1e] mt-1 rounded-xl border border-gray-800 overflow-y-auto`}>
+                            {log.length === 0 ? (
+                                <div className="p-4 text-center text-xs text-gray-600">No hay registros aún</div>
+                            ) : (
+                                log.map((item) => (
+                                    <div key={item.id} className="flex justify-between items-center p-3 border-b border-gray-800 last:border-0 text-xs">
+                                        <span className="text-gray-500">{item.date}</span>
+                                        <div className="flex gap-2">
+                                            <span className="text-gray-300">${item.price}</span>
+                                            <span className="text-gray-500">→</span>
+                                            <span className="text-gray-300">{item.paid} {item.currency}</span>
+                                        </div>
+                                        <span className={`font-bold ${item.rate > activeParalelo ? 'text-red-500' : 'text-green-500'}`}>
+                                            {item.rate}
+                                        </span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
 
                 </div>
