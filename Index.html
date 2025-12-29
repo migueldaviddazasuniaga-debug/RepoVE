@@ -1,381 +1,953 @@
-<!DOCTYPE html>
-<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadolar 🇻🇪</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+    <title>Calculator</title>
+    <title>Klculadolar Ultimate</title>
     <style>
-        body { background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; user-select: none; }
-        /* Eliminar flechas de inputs numéricos */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .ios-btn:active { opacity: 0.7; transform: scale(0.98); }
-        /* Animación suave para el historial */
-        .accordion-content { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out; max-height: 0; opacity: 0; overflow: hidden; }
-        .accordion-content.open { max-height: 300px; opacity: 1; }
+        /* --- ESTILOS GENERALES Y ESTRUCTURA 3D --- */
+        :root {
+            --bg-color: #000;
+            --text-color: #fff;
+            --calc-btn: #333;
+            --calc-orange: #ff9f0a;
+            --calc-light: #a5a5a5;
+            --vinotinto: #820000; 
+            --accent-green: #2ecc71;
+            --accent-blue: #3498db;
+            --vinotinto: #820000;
+        }
+
+        body {
+            background-color: #111;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #050505;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+@@ -27,380 +23,349 @@
+            overflow: hidden;
+        }
+
+        /* --- 3D FLIP CONTAINER --- */
+        .scene {
+            width: 380px; /* Un poco más ancho para que quepa la data */
+            width: 380px;
+            height: 750px;
+            perspective: 1000px;
+            perspective: 1200px;
+            position: relative;
+        }
+
+        .card {
+        .carousel {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.8s;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+        /* Definimos las 3 caras del prisma */
+        .carousel-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            left: 0;
+            top: 0;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            backface-visibility: hidden; /* Oculta la cara si está de espaldas */
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            background: #1a1a1a;
+        }
+
+        /* --- FRONT: CALCULADORA IOS --- */
+        .front {
+            background-color: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .screen-calc {
+            color: white;
+            font-size: 80px;
+            text-align: right;
+            margin-bottom: 20px;
+            font-weight: 300;
+            padding-right: 10px;
+        /* Matemática del Prisma Triangular:
+           Para un ancho de ~380px, el translateZ necesario para separarlas es aprox 110px.
+           Rotamos cada cara 120 grados.
+        */
+        
+        /* Cara 1: Calculadora (Frente) */
+        .face-1 {
+            transform: rotateY(0deg) translateZ(110px); /* Ajuste visual para el giro */
+            background: #000;
+            z-index: 3;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        
+        /* Cara 2: Klculadolar (Derecha) */
+        .face-2 {
+            transform: rotateY(120deg) translateZ(110px);
+            background: #1a1a1a;
+            z-index: 2;
+        }
+
+        .btn-calc {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: none;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        /* Cara 3: Comparadora Legacy (Izquierda) */
+        .face-3 {
+            transform: rotateY(240deg) translateZ(110px);
+            background: #1a1a1a; /* Color base del legacy */
+            z-index: 1;
+            overflow-y: auto; /* Permitir scroll si el legacy es largo */
+        }
+
+        .bg-grey { background-color: var(--calc-btn); }
+        .bg-light { background-color: var(--calc-light); color: black; }
+        .bg-orange { background-color: var(--calc-orange); }
+        .zero { grid-column: span 2; width: 100%; border-radius: 40px; padding-left: 25px; justify-content: flex-start; }
+
+        .secret-flip-btn {
+            margin-top: 20px;
+            background: transparent;
+        /* Botón de Rotación (El Engranaje/Flecha) */
+        .nav-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #222; /* Casi invisible */
+            color: #666;
+            font-size: 24px;
+            cursor: pointer;
+            align-self: flex-start;
+        }
+
+        /* --- BACK: KLCULADOLAR --- */
+        .back {
+            background-color: #1a1a1a;
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            color: white;
+            overflow-y: auto;
+        }
+
+        /* Header con Refresh */
+        .header-tools {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .header-tools h2 { 
+            margin: 0; 
+            color: var(--vinotinto); 
+            font-size: 24px; 
+            letter-spacing: 1px;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid #444;
+            color: var(--accent-green);
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.3s;
+        }
+        .refresh-btn:active { transform: scale(0.9); }
+        .refresh-btn.loading { animation: spin 1s infinite linear; }
+        .nav-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Grid de Tasas */
+        .rates-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columnas */
+            gap: 8px;
+            margin-bottom: 15px;
+            background: #222;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .rate-box {
+        /* ========================================= */
+        /* === ESTILOS CARA 1: CALCULADORA IOS === */
+        /* ========================================= */
+        .calc-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .rate-box label {
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .rate-box input {
+            background: #333;
+            border: 1px solid #444;
+            color: var(--calc-orange);
+            font-weight: bold;
+            padding: 5px;
+            border-radius: 5px;
+            width: 100%;
+            justify-content: flex-end;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        /* Input Principal (Precio $) */
+        .main-input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+
+        .main-input-group {
+            flex: 2;
+        }
+        .main-input-group label { display: block; color: #aaa; font-size: 12px; margin-bottom: 5px; }
+        .main-input-group input {
+            width: 100%;
+            padding: 12px;
+            background: #000;
+            border: 1px solid var(--vinotinto);
+        .screen-calc {
+            color: white;
+            font-size: 22px;
+            border-radius: 8px;
+            font-size: 80px;
+            text-align: right;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        /* Resultados Calculados */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 15px;
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 60px; /* Espacio para el boton nav */
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            background: #252525;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        .btn-calc {
+            width: 65px; height: 65px; border-radius: 50%; border: none;
+            font-size: 30px; color: white; cursor: pointer;
+        }
+        .result-label { color: #aaa; }
+        .result-value { color: white; font-weight: bold; font-family: monospace; }
+
+        /* Botones Acción */
+        .actions { display: flex; gap: 8px; margin-bottom: 15px; }
+        .btn-tool {
+            flex: 1;
+        .bg-grey { background-color: #333; }
+        .bg-light { background-color: #a5a5a5; color: black; }
+        .bg-orange { background-color: #ff9f0a; }
+        .zero { grid-column: span 2; width: 100%; border-radius: 40px; text-align: left; padding-left: 25px; }
+
+
+        /* ========================================= */
+        /* === ESTILOS CARA 2: KLCULADOLAR === */
+        /* ========================================= */
+        .klc-container { padding: 20px; height: 100%; display: flex; flex-direction: column; }
+        .header-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .header-tools h2 { margin: 0; color: var(--vinotinto); font-size: 24px; }
+        .refresh-btn { background: none; border: 1px solid #444; color: #2ecc71; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; }
+        .rates-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 12px; }
+        .rate-box { display: flex; flex-direction: column; }
+        .rate-box label { font-size: 10px; color: #888; margin-bottom: 2px; }
+        .rate-box input { background: #333; border: 1px solid #444; color: var(--calc-orange); padding: 5px; border-radius: 5px; width: 100%; text-align: center; }
+        .main-input-group label { display: block; color: #aaa; font-size: 12px; margin-bottom: 5px; }
+        .main-input-group input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--vinotinto); color: white; font-size: 22px; border-radius: 8px; text-align: right; box-sizing: border-box; }
+        .results-container { margin-top: 15px; display: flex; flex-direction: column; gap: 5px; }
+        .result-row { display: flex; justify-content: space-between; background: #252525; padding: 8px 12px; border-radius: 6px; font-size: 14px; color: white; }
+        .actions { display: flex; gap: 8px; margin-top: 15px; }
+        .btn-tool { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-snap { background: var(--vinotinto); color: white; }
+        .btn-clear { background: #444; color: white; }
+        .log-container { flex-grow: 1; background: #111; border: 1px solid #333; border-radius: 8px; margin-top: 10px; padding: 8px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #ccc; }
+
+
+        /* ========================================= */
+        /* === ESTILOS CARA 3: LEGACY (Restaurados) === */
+        /* ========================================= */
+        .legacy-wrapper {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-snap { background-color: var(--vinotinto); color: white; }
+        .btn-clear { background-color: #444; color: white; }
+
+        /* Log */
+        .log-container {
+            flex-grow: 1;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 8px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            margin-bottom: 10px;
+        
+        .legacy-header {
+            background: linear-gradient(135deg, #5A0A0A 0%, #2c3e50 100%);
+            color: white; padding: 10px; text-align: left; font-weight: 600; border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+        .log-entry {
+            border-bottom: 1px solid #222;
+            padding: 6px 0;
+            color: #ccc;
+            display: flex;
+            flex-direction: column;
+        
+        .legacy-body {
+            background: #2d2d2d; padding: 10px; border-radius: 0 0 8px 8px; border: 1px solid #404040;
+        }
+        .log-header { color: var(--calc-orange); margin-bottom: 2px; }
+        .log-details { color: #888; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;}
+
+        .copy-btn {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px;
+            width: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .l-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #555; }
+        .l-label { font-size: 11px; color: #e0e0e0; }
+        .l-input { width: 70px; padding: 4px; background: #404040; border: 1px solid #555; color: white; text-align: right; font-family: monospace; border-radius: 4px; }
+        .l-input:focus { border-color: #820000; outline: none; }
+        
+        .l-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .l-table th { background: #34495e; padding: 5px; font-size: 10px; }
+        .l-table td { background: #2d2d2d; padding: 8px; border-bottom: 1px solid #555; vertical-align: middle; }
+        
+        .l-tasa-real { font-weight: 700; font-family: monospace; }
+        .tr-normal { color: #2ecc71; }
+        .tr-warn { color: #f1c40f; }
+        .tr-alert { color: #e74c3c; animation: blink 1s infinite; }
+        
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .legacy-footer { margin-top: 10px; font-size: 9px; color: #888; text-align: center; }
+
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-black">
+<body>
 
-    <div id="root"></div>
+<div class="scene">
+    <div class="card" id="card">
+    <div class="carousel" id="carousel">
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        <div class="card-face front">
+            <div class="screen-calc" id="calc-screen">0</div>
+            <div class="keypad">
+                <button class="btn-calc bg-light" onclick="clearCalc()">AC</button>
+                <button class="btn-calc bg-light">±</button>
+                <button class="btn-calc bg-light">%</button>
+                <button class="btn-calc bg-orange" onclick="appendCalc('/')">÷</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('7')">7</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('8')">8</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('9')">9</button>
+                <button class="btn-calc bg-orange" onclick="appendCalc('*')">×</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('4')">4</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('5')">5</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('6')">6</button>
+                <button class="btn-calc bg-orange" onclick="appendCalc('-')">-</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('1')">1</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('2')">2</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('3')">3</button>
+                <button class="btn-calc bg-orange" onclick="appendCalc('+')">+</button>
+                <button class="btn-calc bg-grey zero" onclick="appendCalc('0')">0</button>
+                <button class="btn-calc bg-grey" onclick="appendCalc('.')">.</button>
+                <button class="btn-calc bg-orange" onclick="calcResult()">=</button>
+        <div class="carousel-face face-1">
+            <div class="calc-container">
+                <div class="screen-calc" id="calc-screen">0</div>
+                <div class="keypad">
+                    <button class="btn-calc bg-light" onclick="clearCalc()">AC</button>
+                    <button class="btn-calc bg-light">±</button>
+                    <button class="btn-calc bg-light">%</button>
+                    <button class="btn-calc bg-orange" onclick="appendCalc('/')">÷</button>
 
-        const COLORS = {
-            vinotinto: '#800020',
-            iosOrange: '#ff9f0a',
-            iosDarkGray: '#333333',
-            iosLightGray: '#a5a5a5',
-        };
+                    <button class="btn-calc bg-grey" onclick="appendCalc('7')">7</button>
+                    <button class="btn-calc bg-grey" onclick="appendCalc('8')">8</button>
+                    <button class="btn-calc bg-grey" onclick="appendCalc('9')">9</button>
+                    <button class="btn-calc bg-orange" onclick="appendCalc('*')">×</button>
 
-        const App = () => {
-            const [viewMode, setViewMode] = useState('calculator'); // 'calculator' | 'tool'
-            
-            // --- ESTADO CALCULADORA ---
-            const [calcDisplay, setCalcDisplay] = useState('0');
-            const [waitingForOperand, setWaitingForOperand] = useState(false);
-            const [operator, setOperator] = useState(null);
-            const [value, setValue] = useState(null);
+                    <button class="btn-calc bg-grey" onclick="appendCalc('4')">4</button>
+                    <button class="btn-calc bg-grey" onclick="appendCalc('5')">5</button>
+                    <button class="btn-calc bg-grey" onclick="appendCalc('6')">6</button>
+                    <button class="btn-calc bg-orange" onclick="appendCalc('-')">-</button>
 
-            // --- ESTADO HERRAMIENTA ---
-            const [rates, setRates] = useState({
-                bcv: 46.20,
-                paralelo: 54.50,
-                euro: 49.10,
-                binance: 55.02,
-                promedio: 52.30
-            });
+                    <button class="btn-calc bg-grey" onclick="appendCalc('1')">1</button>
+                    <button class="btn-calc bg-grey" onclick="appendCalc('2')">2</button>
+                    <button class="btn-calc bg-grey" onclick="appendCalc('3')">3</button>
+                    <button class="btn-calc bg-orange" onclick="appendCalc('+')">+</button>
 
-            const [inputs, setInputs] = useState({
-                priceDollar: '',
-                payAmount: '', // "Me piden..."
-                currency: 'Bs', // Dropdown Bs/$
-                customBcv: '',
-                customParalelo: ''
-            });
-
-            const [showHistory, setShowHistory] = useState(false);
-            const [log, setLog] = useState([]); // Historial simulado
-
-            // --- LÓGICA CAMUFLAJE ---
-            useEffect(() => {
-                if (calcDisplay === '676767') {
-                    setTimeout(() => {
-                        setViewMode('tool');
-                        setCalcDisplay('0');
-                        setValue(null);
-                        setOperator(null);
-                    }, 200);
-                }
-            }, [calcDisplay]);
-
-            // --- FUNCIONES CALCULADORA ---
-            const inputDigit = (digit) => {
-                if (waitingForOperand) {
-                    setCalcDisplay(String(digit));
-                    setWaitingForOperand(false);
-                } else {
-                    setCalcDisplay(calcDisplay === '0' ? String(digit) : calcDisplay + digit);
-                }
-            };
-
-            const performOperation = (nextOperator) => {
-                const inputValue = parseFloat(calcDisplay);
-                if (value === null) {
-                    setValue(inputValue);
-                } else if (operator) {
-                    const currentValue = value || 0;
-                    const newValue = calculate(currentValue, inputValue, operator);
-                    setValue(newValue);
-                    setCalcDisplay(String(newValue));
-                }
-                setWaitingForOperand(true);
-                setOperator(nextOperator);
-            };
-
-            const calculate = (prev, next, op) => {
-                switch (op) {
-                    case '+': return prev + next;
-                    case '-': return prev - next;
-                    case '*': return prev * next;
-                    case '/': return prev / next;
-                    default: return next;
-                }
-            };
-
-            const clearCalc = () => {
-                setCalcDisplay('0'); setValue(null); setOperator(null); setWaitingForOperand(false);
-            };
-
-            // --- FUNCIONES HERRAMIENTA ---
-            
-            // Determinar tasas activas (si el usuario escribe, usa su valor, si borra, usa la API)
-            const activeBcv = inputs.customBcv !== '' ? parseFloat(inputs.customBcv) : rates.bcv;
-            const activeParalelo = inputs.customParalelo !== '' ? parseFloat(inputs.customParalelo) : rates.paralelo;
-
-            // Manejo de "Si vacío, restaurar"
-            const handleRateBlur = (field) => {
-                // Si el usuario deja el campo vacío, simplemente limpiamos el custom para que tome el default (API)
-                // Visualmente parecerá que "regresa" el valor original
-                if (inputs[field] === '' || isNaN(parseFloat(inputs[field]))) {
-                    setInputs(prev => ({ ...prev, [field]: '' }));
-                }
-            };
-
-            const handleFetchRates = () => {
-                const btn = document.getElementById('fetch-btn');
-                if(btn) btn.classList.add('animate-spin');
-                setTimeout(() => {
-                    setRates(prev => ({
-                        ...prev,
-                        bcv: (prev.bcv + 0.05).toFixed(2) * 1,
-                        paralelo: (prev.paralelo + 0.12).toFixed(2) * 1
-                    }));
-                    if(btn) btn.classList.remove('animate-spin');
-                }, 800);
-            };
-
-            const saveLog = () => {
-                if (tasaImplicita > 0) {
-                    const newEntry = {
-                        id: Date.now(),
-                        date: new Date().toLocaleTimeString(),
-                        price: inputs.priceDollar,
-                        paid: inputs.payAmount,
-                        currency: inputs.currency,
-                        rate: tasaImplicita.toFixed(2)
-                    };
-                    setLog([newEntry, ...log]);
-                    setShowHistory(true); // Abrir historial al guardar
-                }
-            };
-
-            // CÁLCULO CENTRAL
-            let tasaImplicita = 0;
-            const precioDolar = parseFloat(inputs.priceDollar);
-            const cantidadPagar = parseFloat(inputs.payAmount);
-
-            if (precioDolar && cantidadPagar) {
-                if (inputs.currency === 'Bs') {
-                    // Si me piden Bs, Tasa = Bs / $
-                    tasaImplicita = cantidadPagar / precioDolar;
-                } else {
-                    // Si me piden $, es un cálculo de sobreprecio directo en divisa, 
-                    // pero para mantener la consistencia de "Tasa", convertimos a Bs con paralelo
-                    // Ojo: Si me piden $12 por algo de $10, la tasa implicita es virtual.
-                    // Asumiremos lógica estándar: Tasa Implícita = (MontoPagarEnDivisa * Paralelo) / PrecioBase
-                    // O simplemente mostramos la diferencia porcentual. 
-                    // Para simplificar según tu uso anterior: Tasa Implícita suele ser Bs/$.
-                    // Si seleccionan USD, asumimos que quieren ver el ratio simple.
-                    tasaImplicita = (cantidadPagar / precioDolar) * activeParalelo; 
-                }
-            }
-
-            // --- RENDER ---
-            
-            // Componente Botón Calc
-            const CalcBtn = ({ l, type, onClick, d }) => {
-                let bg = type === 'o' ? COLORS.iosOrange : type === 't' ? COLORS.iosLightGray : COLORS.iosDarkGray;
-                let txt = type === 't' ? 'black' : 'white';
-                return (
-                    <button onClick={onClick} className={`ios-btn ${d ? 'col-span-2' : ''} h-16 w-full rounded-full flex items-center justify-center text-3xl font-medium`} style={{backgroundColor: bg, color: txt}}>
-                        {l}
-                    </button>
-                );
-            };
-
-            if (viewMode === 'calculator') {
-                return (
-                    <div className="flex flex-col items-center justify-end h-[680px] w-[375px] bg-black text-white p-5 rounded-[40px] shadow-2xl border border-gray-800 relative overflow-hidden">
-                        <div className="w-full h-32 flex items-end justify-end px-4 mb-4">
-                            <span className="text-7xl font-light tracking-tight truncate">{calcDisplay}</span>
-                        </div>
-                        <div className="w-full grid grid-cols-4 gap-3">
-                            <CalcBtn l="AC" type="t" onClick={clearCalc} />
-                            <CalcBtn l="+/-" type="t" onClick={()=>{}} />
-                            <CalcBtn l="%" type="t" onClick={()=>{}} />
-                            <CalcBtn l="÷" type="o" onClick={() => performOperation('/')} />
-                            <CalcBtn l="7" onClick={() => inputDigit(7)} />
-                            <CalcBtn l="8" onClick={() => inputDigit(8)} />
-                            <CalcBtn l="9" onClick={() => inputDigit(9)} />
-                            <CalcBtn l="×" type="o" onClick={() => performOperation('*')} />
-                            <CalcBtn l="4" onClick={() => inputDigit(4)} />
-                            <CalcBtn l="5" onClick={() => inputDigit(5)} />
-                            <CalcBtn l="6" onClick={() => inputDigit(6)} />
-                            <CalcBtn l="-" type="o" onClick={() => performOperation('-')} />
-                            <CalcBtn l="1" onClick={() => inputDigit(1)} />
-                            <CalcBtn l="2" onClick={() => inputDigit(2)} />
-                            <CalcBtn l="3" onClick={() => inputDigit(3)} />
-                            <CalcBtn l="+" type="o" onClick={() => performOperation('+')} />
-                            <CalcBtn l="0" d onClick={() => inputDigit(0)} />
-                            <CalcBtn l="," onClick={() => inputDigit('.')} />
-                            <CalcBtn l="=" type="o" onClick={() => performOperation('=')} />
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="flex flex-col h-[680px] w-[375px] bg-[#121212] text-white rounded-[40px] shadow-2xl relative border border-gray-800 p-5 font-sans overflow-hidden">
-                    
-                    {/* Botón Salir */}
-                    <button onClick={() => setViewMode('calculator')} className="absolute top-5 right-5 p-2 rounded-full bg-gray-800 text-red-500 z-50 hover:bg-gray-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                    </button>
-
-                    {/* Header */}
-                    <div className="flex items-center gap-3 mt-2 mb-1">
-                        <h1 className="text-2xl font-bold text-red-600 tracking-tight">Calculadolar 🇻🇪</h1>
-                        <button id="fetch-btn" onClick={handleFetchRates} className="p-2 bg-gray-800 rounded-full text-gray-300">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
-                        </button>
-                    </div>
-
-                    {/* Ticker Tasas */}
-                    <div className="flex gap-4 text-xs font-mono text-yellow-500/90 mb-6 overflow-x-auto pb-2 border-b border-gray-800 whitespace-nowrap">
-                        <span>EUR: {rates.euro}</span> • <span>BIN: {rates.binance}</span> • <span>PROM: {rates.promedio}</span>
-                    </div>
-
-                    {/* GRID PRINCIPAL */}
-                    <div className="flex flex-col gap-4">
-                        
-                        {/* Fila 1: Tasas Editables */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-1">
-                                <label className="text-xs text-green-500 font-bold ml-1">Tasa BCV</label>
-                                <input 
-                                    type="number" 
-                                    placeholder={rates.bcv}
-                                    value={inputs.customBcv}
-                                    onChange={(e) => setInputs({...inputs, customBcv: e.target.value})}
-                                    onBlur={() => handleRateBlur('customBcv')}
-                                    className="w-full bg-[#1c1c1e] border border-green-600 text-green-500 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-green-500 text-xl font-bold placeholder-green-500/50 text-center"
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <label className="text-xs text-red-500 font-bold ml-1">Tasa Paralelo</label>
-                                <input 
-                                    type="number" 
-                                    placeholder={rates.paralelo}
-                                    value={inputs.customParalelo}
-                                    onChange={(e) => setInputs({...inputs, customParalelo: e.target.value})}
-                                    onBlur={() => handleRateBlur('customParalelo')}
-                                    className="w-full bg-[#1c1c1e] border border-red-600 text-red-500 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-red-500 text-xl font-bold placeholder-red-500/50 text-center"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Fila 2: Inputs Precios con Dropdown */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-1">
-                                <label className="text-xs text-gray-400 ml-1">Precio Marcado ($)</label>
-                                <input 
-                                    type="number" 
-                                    placeholder="10"
-                                    value={inputs.priceDollar}
-                                    onChange={(e) => setInputs({...inputs, priceDollar: e.target.value})}
-                                    className="w-full bg-[#2c2c2e] border border-gray-700 text-white p-3 rounded-xl focus:outline-none focus:border-gray-500 text-xl text-center"
-                                />
-                            </div>
-                            
-                            <div className="flex flex-col gap-1">
-                                <label className="text-xs text-gray-400 ml-1">Me piden...</label>
-                                <div className="flex h-[54px] bg-[#2c2c2e] border border-gray-700 rounded-xl overflow-hidden focus-within:border-gray-500">
-                                    {/* Dropdown Incorporado */}
-                                    <select 
-                                        value={inputs.currency}
-                                        onChange={(e) => setInputs({...inputs, currency: e.target.value})}
-                                        className="bg-[#3a3a3c] text-white px-2 text-sm font-bold border-r border-gray-600 outline-none appearance-none text-center min-w-[50px]"
-                                    >
-                                        <option value="Bs">Bs</option>
-                                        <option value="$">$</option>
-                                    </select>
-                                    <input 
-                                        type="number" 
-                                        placeholder="500"
-                                        value={inputs.payAmount}
-                                        onChange={(e) => setInputs({...inputs, payAmount: e.target.value})}
-                                        className="w-full bg-transparent text-white p-2 text-xl text-center outline-none"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Resultado */}
-                        <div className="mt-2 p-4 rounded-2xl border border-dashed border-gray-700 bg-gray-900/50 flex flex-col items-center justify-center min-h-[100px]">
-                            <span className="text-xs text-gray-500 uppercase tracking-wider mb-1">Tasa Implícita</span>
-                            {tasaImplicita > 0 ? (
-                                <>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-4xl font-bold text-white">{tasaImplicita.toFixed(2)}</span>
-                                        <span className="text-sm text-gray-400">Bs/$</span>
-                                    </div>
-                                    <div className={`mt-2 text-xs px-2 py-0.5 rounded uppercase font-bold tracking-wide ${
-                                        tasaImplicita > activeParalelo ? 'bg-red-900/80 text-red-200' : 
-                                        tasaImplicita < activeBcv ? 'bg-green-900/80 text-green-200' : 
-                                        'bg-yellow-900/80 text-yellow-200'
-                                    }`}>
-                                        {tasaImplicita > activeParalelo ? 'Sobreprecio' : tasaImplicita < activeBcv ? 'Subvaluado' : 'En Rango'}
-                                    </div>
-                                </>
-                            ) : (
-                                <span className="text-3xl font-bold text-gray-700">--.--</span>
-                            )}
-                        </div>
-
-                        {/* Botón Guardar */}
-                        <button 
-                            onClick={saveLog}
-                            className="w-full py-3 rounded-xl text-white font-bold shadow-lg active:scale-95 transition-transform"
-                            style={{ backgroundColor: COLORS.vinotinto }}
-                        >
-                            Guardar en Log
-                        </button>
-                    </div>
-
-                    {/* Historial (Dropdown inferior) */}
-                    <div className="mt-auto pt-2">
-                        <button 
-                            onClick={() => setShowHistory(!showHistory)}
-                            className="w-full flex items-center justify-between p-3 bg-[#1c1c1e] rounded-xl text-sm text-gray-400 hover:text-white transition-colors border border-gray-800"
-                        >
-                            <span>Historial / Log ({log.length})</span>
-                            <span className={`transform transition-transform ${showHistory ? 'rotate-180' : ''}`}>▼</span>
-                        </button>
-                        
-                        <div className={`accordion-content ${showHistory ? 'open' : ''} bg-[#1c1c1e] mt-1 rounded-xl border border-gray-800 overflow-y-auto`}>
-                            {log.length === 0 ? (
-                                <div className="p-4 text-center text-xs text-gray-600">No hay registros aún</div>
-                            ) : (
-                                log.map((item) => (
-                                    <div key={item.id} className="flex justify-between items-center p-3 border-b border-gray-800 last:border-0 text-xs">
-                                        <span className="text-gray-500">{item.date}</span>
-                                        <div className="flex gap-2">
-                                            <span className="text-gray-300">${item.price}</span>
-                                            <span className="text-gray-500">→</span>
-                                            <span className="text-gray-300">{item.paid} {item.currency}</span>
-                                        </div>
-                                        <span className={`font-bold ${item.rate > activeParalelo ? 'text-red-500' : 'text-green-500'}`}>
-                                            {item.rate}
-                                        </span>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
+                    <button class="btn-calc bg-grey zero" onclick="appendCalc('0')">0</button>
+                    <button class="btn-calc bg-grey" onclick="appendCalc('.')">.</button>
+                    <button class="btn-calc bg-orange" onclick="calcResult()">=</button>
                 </div>
-            );
-        };
+                <button class="nav-btn" onclick="rotateCarousel()">↻</button>
+            </div>
+            <button class="secret-flip-btn" onclick="flipCard()">⚙️</button>
+        </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        <div class="card-face back">
+            <button class="back-btn" onclick="flipCard()">↻</button>
+            
+            <div class="header-tools">
+                <h2>klculadolar</h2>
+                <button class="refresh-btn" id="refreshBtn" onclick="fetchRates()" title="Actualizar Tasas">⟳</button>
+            </div>
+
+            <div class="rates-grid">
+                <div class="rate-box">
+                    <label>BCV</label>
+                    <input type="number" id="rate-bcv" value="0.00" oninput="calculate()">
+        <div class="carousel-face face-2">
+            <div class="klc-container">
+                <div class="header-tools">
+                    <h2>klculadolar</h2>
+                    <button class="refresh-btn" onclick="fetchRatesModern()">⟳</button>
+                </div>
+                <div class="rate-box">
+                    <label>Paralelo</label>
+                    <input type="number" id="rate-par" value="0.00" oninput="calculate()">
+                
+                <div class="rates-grid">
+                    <div class="rate-box"><label>BCV</label><input type="number" id="rate-bcv" oninput="calculateKlc()"></div>
+                    <div class="rate-box"><label>Paralelo</label><input type="number" id="rate-par" oninput="calculateKlc()"></div>
+                    <div class="rate-box"><label>Binance</label><input type="number" id="rate-bin" oninput="calculateKlc()"></div>
+                </div>
+                <div class="rate-box">
+                    <label>Binance</label>
+                    <input type="number" id="rate-bin" value="0.00" oninput="calculate()">
+                </div>
+                <div class="rate-box">
+                    <label>Euro</label>
+                    <input type="number" id="rate-eur" value="0.00" oninput="calculate()">
+                </div>
+                <div class="rate-box">
+                    <label>Promedio</label>
+                    <input type="number" id="rate-avg" value="0.00" readonly style="background:#2a2a2a; color:#aaa;">
+                </div>
+            </div>
+
+            <div class="main-input-section">
+                <div class="main-input-group">
+                    <label>Monto Base ($ USD)</label>
+                    <input type="number" id="amount-usd" placeholder="0.00" oninput="calculate()">
+                    <label>Monto en Dólares ($)</label>
+                    <input type="number" id="amount-usd" placeholder="0.00" oninput="calculateKlc()">
+                </div>
+            </div>
+
+            <div class="results-container">
+                <div class="result-row">
+                    <span class="result-label">BCV:</span>
+                    <span class="result-value" id="res-bcv">Bs 0.00</span>
+                <div class="results-container">
+                    <div class="result-row"><span>BCV:</span><span id="res-bcv">Bs 0.00</span></div>
+                    <div class="result-row"><span>Paralelo:</span><span id="res-par">Bs 0.00</span></div>
+                    <div class="result-row"><span>Binance:</span><span id="res-bin">Bs 0.00</span></div>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Paralelo:</span>
+                    <span class="result-value" id="res-par">Bs 0.00</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Binance:</span>
+                    <span class="result-value" id="res-bin">Bs 0.00</span>
+
+                <div class="actions">
+                    <button class="btn-tool btn-snap" onclick="takeSnapshot()">📸 Snapshot</button>
+                    <button class="btn-tool btn-clear" onclick="document.getElementById('log-list').innerHTML=''">Limpiar</button>
+                </div>
+            </div>
+                
+                <div class="log-container" id="log-list"></div>
+
+            <div class="actions">
+                <button class="btn-tool btn-snap" onclick="takeSnapshot()">📸 Guardar Snapshot</button>
+                <button class="btn-tool btn-clear" onclick="clearLog()">Limpiar</button>
+                <button class="nav-btn" onclick="rotateCarousel()">↻</button>
+            </div>
+        </div>
+
+            <div class="log-container" id="log-list">
+        <div class="carousel-face face-3">
+            <div class="legacy-wrapper">
+                <div class="legacy-header">Calculadolar - Compacta</div>
+                
+                <div class="legacy-body">
+                    <div style="font-size:9px; color:#aaa; margin-bottom:5px;" id="timestampBCV">Actualizando...</div>
+                    
+                    <div class="l-row">
+                        <span class="l-label">Tasa BCV</span>
+                        <input type="text" class="l-input" id="tasaBCV" placeholder="0.00">
+                    </div>
+                    <div class="l-row">
+                        <span class="l-label">Tasa Venta (Paralelo)</span>
+                        <input type="text" class="l-input" id="tasaParalelo" placeholder="0.00">
+                    </div>
+
+                    <div style="border-top:1px solid #444; margin:10px 0;"></div>
+
+                    <div class="l-row">
+                        <span class="l-label">Tasa Implícita de Pago</span>
+                        <div>
+                            <span id="iconoEstado"></span>
+                            <span id="tasaReal" class="l-tasa-real">--</span>
+                            <span style="font-size:9px; color:#aaa">Bs/$</span>
+                        </div>
+                    </div>
+
+                    <table class="l-table">
+                        <tr>
+                            <td colspan="2">
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span style="color:#ddd">Precio en $</span>
+                                    <div>
+                                        <input type="checkbox" id="descuentoToggle">
+                                        <span style="font-size:9px; color:#aaa">Desc %</span>
+                                        <input type="number" id="descuentoInput" value="10" style="width:25px; border:none; background:#444; color:white; text-align:center">
+                                    </div>
+                                </div>
+                                <div style="display:flex; align-items:center; margin-top:5px;">
+                                    <input type="text" id="precioDolares" class="l-input" style="width:100%; font-size:16px;" placeholder="0.00">
+                                    <span style="margin-left:5px; color:#aaa;">$</span>
+                                </div>
+                                <div id="descuentoLabel" style="font-size:9px; color:#2ecc71; text-align:right;"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <span style="color:#ddd">Precio en Bs (A pagar)</span>
+                                <div style="display:flex; align-items:center; margin-top:5px;">
+                                    <input type="text" id="precioBolivares" class="l-input" style="width:100%; font-size:16px;" placeholder="0.00">
+                                    <span style="margin-left:5px; color:#aaa;">Bs</span>
+                                </div>
+                                <div id="conversionesBolivares" style="font-size:9px; color:#888; margin-top:3px;"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="background:#222; text-align:center;">
+                                <div id="areaDiferencia" style="min-height:20px;"></div>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <div class="legacy-footer">
+                        Fuente API: DolarApi VE / GitHub API Vzla
+                    </div>
+                </div>
+
+            <button class="copy-btn" onclick="copyLog()">Copiar Log</button>
+
+                <button class="nav-btn" onclick="rotateCarousel()">↻</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    /* --- 1. LÓGICA VISUAL (FLIP & CALCULADORA) --- */
+    const card = document.getElementById('card');
+    const flipCard = () => card.classList.toggle('is-flipped');
+    /* ========================================= */
+    /* === 1. LÓGICA DE ROTACIÓN (PRISMA) === */
+    /* ========================================= */
+    const carousel = document.getElementById('carousel');
+    let angle = 0;
+
+    function rotateCarousel() {
+        angle -= 120; // Girar 120 grados para la siguiente cara
+        carousel.style.transform = `rotateY(${angle}deg)`;
+        
+        // Pequeño hack para forzar el repintado si se traba en móviles
+        setTimeout(() => {
+            // Si vamos a la cara 3 (Legacy), intentamos actualizar tasas si están vacías
+            if (Math.abs(angle % 360) === 240) {
+                if(document.getElementById('tasaBCV').value === "") validarTasasLegacy();
+            }
+        }, 500);
+    }
+
+    /* ========================================= */
+    /* === 2. LÓGICA CALCULADORA IOS === */
+    /* ========================================= */
+    const calcScreen = document.getElementById('calc-screen');
+    let currentExp = '';
+
+    function appendCalc(val) {
+        if(calcScreen.innerText === '0' && val !== '.') currentExp = '';
+        currentExp += val;
+@@ -409,123 +374,181 @@ <h2>klculadolar</h2>
+    function clearCalc() { currentExp = ''; calcScreen.innerText = '0'; }
+    function calcResult() {
+        try { calcScreen.innerText = eval(currentExp) || 0; currentExp = calcScreen.innerText; } 
+        catch { calcScreen.innerText = 'Error'; }
+        catch { calcScreen.innerText = 'Err'; }
+    }
+
+    /* --- 2. LÓGICA KLCULADOLAR --- */
+    
+    // Función para obtener tasas (Simulación de Fetch a API Dolar Venezuela)
+    async function fetchRates() {
+        const btn = document.getElementById('refreshBtn');
+        btn.classList.add('loading');
+        
+        // NOTA: Muchas APIs de Venezuela bloquean peticiones directas desde navegador (CORS).
+        // Aquí simulo una conexión exitosa con valores cercanos a la realidad para que veas el efecto.
+        // Si tienes tu propio endpoint, cámbialo en la variable url.
+        
+        try {
+            // Ejemplo de API pública (puede fallar por CORS dependiendo del navegador)
+            const response = await fetch('https://pydolarvenezuela-api.vercel.app/api/v1/dollar/page?page=monitor', {
+                 method: 'GET',
+                 mode: 'cors'
+            });
+            
+            // SI LA API RESPONDE (Lógica Ideal):
+            if(response.ok) {
+                const data = await response.json();
+                // Asignaríamos valores aquí según la estructura del JSON
+                // document.getElementById('rate-bcv').value = data...
+            } else {
+                throw new Error("API Blocked");
+            }
+    /* ========================================= */
+    /* === 3. LÓGICA KLCULADOLAR (MODERNA) === */
+    /* ========================================= */
+    function calculateKlc() {
+        const usd = parseFloat(document.getElementById('amount-usd').value) || 0;
+        const bcv = parseFloat(document.getElementById('rate-bcv').value) || 0;
+        const par = parseFloat(document.getElementById('rate-par').value) || 0;
+        const bin = parseFloat(document.getElementById('rate-bin').value) || 0;
+
+        } catch (error) {
+            // FALLBACK: Si falla la conexión (común en Vzla), ponemos valores referencia
+            // O dejamos que el usuario edite.
+            console.log("Usando valores manuales/referencia debido a error de red:", error);
+            
+            // Valores dummy para probar la UI (El usuario debe corregirlos si no hay internet)
+            // En producción, esto se puede quitar para dejar los campos vacíos.
+            document.getElementById('rate-bcv').value = "45.50"; 
+            document.getElementById('rate-par').value = "52.30";
+            document.getElementById('rate-bin').value = "51.80";
+            document.getElementById('rate-eur').value = "49.10";
+            
+            calculate(); // Recalcular promedio y totales
+        } finally {
+            btn.classList.remove('loading');
+        }
+        document.getElementById('res-bcv').innerText = "Bs " + (usd * bcv).toLocaleString('es-VE', {minimumFractionDigits:2});
+        document.getElementById('res-par').innerText = "Bs " + (usd * par).toLocaleString('es-VE', {minimumFractionDigits:2});
+        document.getElementById('res-bin').innerText = "Bs " + (usd * bin).toLocaleString('es-VE', {minimumFractionDigits:2});
+    }
+
+    // Calculo Principal
+    function calculate() {
+        const usd = parseFloat(document.getElementById('amount-usd').value) || 0;
+    // Usaremos la función fetch del Legacy para alimentar también la moderna
+    async function fetchRatesModern() {
+        const btn = document.querySelector('.refresh-btn');
+        btn.innerText = '...';
+        await obtenerTasaBCVLegacy(); // Reusamos la lógica potente del legacy
+        
+        // Sincronizar valores Legacy -> Moderna
+        document.getElementById('rate-bcv').value = document.getElementById('tasaBCV').value;
+        document.getElementById('rate-par').value = document.getElementById('tasaParalelo').value || 0;
+
+        const rBcv = parseFloat(document.getElementById('rate-bcv').value) || 0;
+        const rPar = parseFloat(document.getElementById('rate-par').value) || 0;
+        const rBin = parseFloat(document.getElementById('rate-bin').value) || 0;
+        const rEur = parseFloat(document.getElementById('rate-eur').value) || 0;
+
+        // Calcular Promedio (Si hay paralelo y bcv, promedio simple, si no, lo que haya)
+        let sum = 0, count = 0;
+        if(rBcv > 0) { sum += rBcv; count++; }
+        if(rPar > 0) { sum += rPar; count++; }
+        // Si quieres incluir binance en el promedio, descomenta:
+        // if(rBin > 0) { sum += rBin; count++; }
+
+        const avg = count > 0 ? (sum / count).toFixed(2) : 0.00;
+        document.getElementById('rate-avg').value = avg;
+
+        // Mostrar Resultados en Bs
+        document.getElementById('res-bcv').innerText = "Bs " + (usd * rBcv).toLocaleString('es-VE', {minimumFractionDigits: 2});
+        document.getElementById('res-par').innerText = "Bs " + (usd * rPar).toLocaleString('es-VE', {minimumFractionDigits: 2});
+        document.getElementById('res-bin').innerText = "Bs " + (usd * rBin).toLocaleString('es-VE', {minimumFractionDigits: 2});
+        calculateKlc();
+        btn.innerText = '⟳';
+    }
+
+    /* --- 3. SNAPSHOTS LOG SYSTEM --- */
+    const logList = document.getElementById('log-list');
+
+    function takeSnapshot() {
+        const usd = document.getElementById('amount-usd').value || '0';
+        const usd = document.getElementById('amount-usd').value;
+        const bcv = document.getElementById('rate-bcv').value;
+        const par = document.getElementById('rate-par').value;
+        
+        // Cálculo del momento
+        const totalBcv = (parseFloat(usd) * parseFloat(bcv)).toFixed(2);
+        const totalPar = (parseFloat(usd) * parseFloat(par)).toFixed(2);
+
+        const time = new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'});
+        
+        const list = document.getElementById('log-list');
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerHTML = `
+            <div class="log-header">Base: $${usd} | ${time}</div>
+            <div class="log-details">
+                <span>BCV: ${bcv} -> Bs ${totalBcv}</span>
+                <span>Par: ${par} -> Bs ${totalPar}</span>
+            </div>
+        `;
+        
+        logList.insertBefore(div, logList.firstChild);
+        div.style.borderBottom = '1px solid #333';
+        div.innerHTML = `Base $${usd} | BCV ${bcv} -> Bs ${(usd*bcv).toFixed(2)}`;
+        list.prepend(div);
+    }
+
+    function clearLog() {
+        logList.innerHTML = '';
+
+    /* ========================================= */
+    /* === 4. LÓGICA LEGACY (RESTAURADA) === */
+    /* ========================================= */
+    
+    // Elementos Legacy
+    const l_tasaBCV = document.getElementById('tasaBCV');
+    const l_tasaPar = document.getElementById('tasaParalelo');
+    const l_precioUSD = document.getElementById('precioDolares');
+    const l_precioBS = document.getElementById('precioBolivares');
+    const l_tasaReal = document.getElementById('tasaReal');
+    
+    // --- Formateo Automático (Input Masking) ---
+    function formatearPrecio(input) {
+        let valor = input.value.replace(/[^\d]/g, '');
+        if (valor === '') { input.value = ''; return 0; }
+        let numero = parseInt(valor) / 100;
+        input.value = numero.toFixed(2);
+        return numero;
+    }
+
+    function copyLog() {
+        let text = "--- KLCULADOLAR LOG ---\n";
+        document.querySelectorAll('.log-entry').forEach(entry => {
+            const header = entry.querySelector('.log-header').innerText;
+            const details = entry.querySelector('.log-details').innerText.replace(/\n/g, " | ");
+            text += `${header} [${details}]\n`;
+    function setupInputMask(input) {
+        input.addEventListener('input', (e) => {
+            // Guardar cursor
+            let start = input.selectionStart; 
+            formatearPrecio(e.target);
+            calcularLegacy();
+        });
+        input.addEventListener('focus', (e) => e.target.select());
+    }
+
+    setupInputMask(l_precioUSD);
+    setupInputMask(l_precioBS);
+    setupInputMask(l_tasaBCV);
+    setupInputMask(l_tasaPar);
+
+    // --- Lógica de Cálculo Legacy ---
+    function calcularLegacy() {
+        const bcv = parseFloat(l_tasaBCV.value) || 0;
+        const par = parseFloat(l_tasaPar.value) || 0;
+        let usd = parseFloat(l_precioUSD.value) || 0;
+        const bs = parseFloat(l_precioBS.value) || 0;
+
+        // Descuento Logic
+        const toggle = document.getElementById('descuentoToggle');
+        if(toggle.checked && usd > 0) {
+            const pct = parseFloat(document.getElementById('descuentoInput').value) || 0;
+            const original = usd;
+            usd = usd * (1 - pct/100);
+            document.getElementById('descuentoLabel').innerText = `-${pct}% (Era $${original.toFixed(2)}) -> $${usd.toFixed(2)}`;
+        } else {
+            document.getElementById('descuentoLabel').innerText = '';
+        }
+
+        if(bcv <= 0 || usd <= 0 || bs <= 0) {
+            l_tasaReal.innerText = "--";
+            document.getElementById('areaDiferencia').innerHTML = "";
+            return;
+        }
+
+        // Tasa Implícita: Cuántos Bs estoy pagando por cada Dólar realmente
+        const tasaImplicita = bs / usd;
+        l_tasaReal.innerText = tasaImplicita.toFixed(2);
+
+        // Semáforo de Colores
+        const icono = document.getElementById('iconoEstado');
+        l_tasaReal.className = "l-tasa-real";
+        
+        if (tasaImplicita <= bcv * 1.01) { // Margen 1%
+            l_tasaReal.classList.add('tr-normal'); // Verde
+            icono.innerText = "✅";
+        } else if (par > 0 && tasaImplicita > par) {
+            l_tasaReal.classList.add('tr-alert'); // Rojo (Pagas más que el paralelo)
+            icono.innerText = "🚨";
+        } else {
+            l_tasaReal.classList.add('tr-warn'); // Amarillo
+            icono.innerText = "⚠️";
+        }
+
+        // Diferencia
+        const deberiaSerBs = usd * bcv;
+        const diferenciaBs = bs - deberiaSerBs;
+        const diferenciaUSD = diferenciaBs / bcv;
+        
+        const area = document.getElementById('areaDiferencia');
+        const color = diferenciaBs > 0 ? '#e74c3c' : '#2ecc71';
+        area.innerHTML = `Diferencia: <span style="color:${color}; font-weight:bold">$${Math.abs(diferenciaUSD).toFixed(2)} (${diferenciaBs > 0 ? 'Sobreprecio' : 'Ahorro'})</span>`;
+    }
+
+    // --- Fetch APIs (Legacy Logic) ---
+    async function obtenerTasaBCVLegacy() {
+        document.getElementById('timestampBCV').innerText = "Buscando tasas...";
+
+        navigator.clipboard.writeText(text).then(() => alert("Copiado!")).catch(e => console.error(e));
+        // Lista de APIs del código original
+        const apis = [
+            { url: 'https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv', parse: d => d.monitors.bcv.price },
+            { url: 'https://ve.dolarapi.com/v1/dolares/oficial', parse: d => d.promedio }
+        ];
+
+        for (const api of apis) {
+            try {
+                const res = await fetch(api.url);
+                if(res.ok) {
+                    const data = await res.json();
+                    const val = api.parse(data);
+                    if(val) {
+                        l_tasaBCV.value = val.toFixed(2);
+                        const now = new Date().toLocaleTimeString();
+                        document.getElementById('timestampBCV').innerText = `Actualizado: ${now}`;
+                        calcularLegacy();
+                        // Actualizar también la cara moderna si existe
+                        if(document.getElementById('rate-bcv')) document.getElementById('rate-bcv').value = val.toFixed(2);
+                        return;
+                    }
+                }
+            } catch(e) { console.log("API Fail", e); }
+        }
+        document.getElementById('timestampBCV').innerText = "Error red - Ingrese manual";
+    }
+
+    async function validarTasasLegacy() {
+        if(!l_tasaBCV.value) await obtenerTasaBCVLegacy();
+    }
+
+    // Iniciar
+    calculate();
+    // Listeners extra
+    document.getElementById('descuentoToggle').addEventListener('change', calcularLegacy);
+    document.getElementById('descuentoInput').addEventListener('input', calcularLegacy);
+
+    // Inicializar
+    setTimeout(() => {
+        // Intentar carga inicial suave
+        validarTasasLegacy();
+    }, 1000);
+
+</script>
+
 </body>
-</html>
