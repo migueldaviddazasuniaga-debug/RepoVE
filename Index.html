@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculator Camouflage</title>
+    <title>Calculator</title>
     <style>
         :root {
             --bg-color: #000;
@@ -11,7 +11,9 @@
             --calc-btn: #333;
             --calc-orange: #ff9f0a;
             --calc-light: #a5a5a5;
-            --vinotinto: #820000; /* Tu color preferido */
+            --vinotinto: #820000; 
+            --accent-green: #2ecc71;
+            --accent-blue: #3498db;
         }
 
         body {
@@ -27,8 +29,8 @@
 
         /* --- 3D FLIP CONTAINER --- */
         .scene {
-            width: 350px;
-            height: 700px;
+            width: 380px; /* Un poco más ancho para que quepa la data */
+            height: 750px;
             perspective: 1000px;
         }
 
@@ -40,7 +42,6 @@
             transform-style: preserve-3d;
         }
 
-        /* Clase para activar el giro */
         .card.is-flipped {
             transform: rotateY(180deg);
         }
@@ -55,7 +56,7 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        /* --- CARA FRONTAL (CALCULADORA IPHONE) --- */
+        /* --- FRONT: CALCULADORA IOS --- */
         .front {
             background-color: black;
             display: flex;
@@ -98,123 +99,188 @@
         .bg-orange { background-color: var(--calc-orange); }
         .zero { grid-column: span 2; width: 100%; border-radius: 40px; padding-left: 25px; justify-content: flex-start; }
 
-        /* Boton Secreto para voltear */
         .secret-flip-btn {
             margin-top: 20px;
             background: transparent;
             border: none;
-            color: #333;
-            font-size: 20px;
+            color: #222; /* Casi invisible */
+            font-size: 24px;
             cursor: pointer;
             align-self: flex-start;
         }
 
-        /* --- CARA TRASERA (HERRAMIENTA REAL) --- */
+        /* --- BACK: KLCULADOLAR --- */
         .back {
-            background-color: #1e1e1e;
+            background-color: #1a1a1a;
             transform: rotateY(180deg);
             display: flex;
             flex-direction: column;
-            padding: 30px;
+            padding: 20px;
             box-sizing: border-box;
             color: white;
+            overflow-y: auto;
         }
 
+        /* Header con Refresh */
         .header-tools {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .header-tools h2 { margin: 0; color: var(--vinotinto); }
-
-        /* Inputs Side-by-Side */
-        .input-row {
-            display: flex;
-            gap: 10px;
             margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
         }
 
-        .input-group {
-            flex: 1;
+        .header-tools h2 { 
+            margin: 0; 
+            color: var(--vinotinto); 
+            font-size: 24px; 
+            letter-spacing: 1px;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid #444;
+            color: var(--accent-green);
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.3s;
+        }
+        .refresh-btn:active { transform: scale(0.9); }
+        .refresh-btn.loading { animation: spin 1s infinite linear; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Grid de Tasas */
+        .rates-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columnas */
+            gap: 8px;
+            margin-bottom: 15px;
+            background: #222;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .rate-box {
             display: flex;
             flex-direction: column;
         }
 
-        .input-group label {
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 5px;
+        .rate-box label {
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 2px;
+            text-transform: uppercase;
         }
 
-        .input-group input {
+        .rate-box input {
             background: #333;
             border: 1px solid #444;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 16px;
+            color: var(--calc-orange);
+            font-weight: bold;
+            padding: 5px;
+            border-radius: 5px;
             width: 100%;
             box-sizing: border-box;
+            font-size: 13px;
+            text-align: center;
         }
 
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--vinotinto);
-        }
-
-        /* Botones de acción */
-        .actions {
+        /* Input Principal (Precio $) */
+        .main-input-section {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            align-items: flex-end;
         }
 
+        .main-input-group {
+            flex: 2;
+        }
+        .main-input-group label { display: block; color: #aaa; font-size: 12px; margin-bottom: 5px; }
+        .main-input-group input {
+            width: 100%;
+            padding: 12px;
+            background: #000;
+            border: 1px solid var(--vinotinto);
+            color: white;
+            font-size: 22px;
+            border-radius: 8px;
+            text-align: right;
+        }
+
+        /* Resultados Calculados */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            background: #252525;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .result-label { color: #aaa; }
+        .result-value { color: white; font-weight: bold; font-family: monospace; }
+
+        /* Botones Acción */
+        .actions { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-tool {
             flex: 1;
-            padding: 12px;
+            padding: 10px;
             border: none;
             border-radius: 8px;
             font-weight: bold;
+            font-size: 13px;
             cursor: pointer;
-            transition: 0.2s;
         }
-
         .btn-snap { background-color: var(--vinotinto); color: white; }
         .btn-clear { background-color: #444; color: white; }
 
-        /* Area de Log / Snapshots */
+        /* Log */
         .log-container {
             flex-grow: 1;
             background: #111;
-            border-radius: 10px;
-            padding: 10px;
-            overflow-y: auto;
             border: 1px solid #333;
+            border-radius: 8px;
+            padding: 8px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
             margin-bottom: 10px;
         }
-
-        .log-item {
-            font-family: monospace;
+        .log-entry {
             border-bottom: 1px solid #222;
-            padding: 5px 0;
-            font-size: 14px;
-            color: #ddd;
+            padding: 6px 0;
+            color: #ccc;
+            display: flex;
+            flex-direction: column;
         }
+        .log-header { color: var(--calc-orange); margin-bottom: 2px; }
+        .log-details { color: #888; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;}
 
         .copy-btn {
-            background-color: var(--calc-orange);
+            background: #333;
             color: white;
-            border: none;
+            border: 1px solid #555;
             padding: 10px;
+            width: 100%;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
-            width: 100%;
         }
 
-        /* Utilitarios */
         .back-btn {
             position: absolute;
             top: 15px;
@@ -222,8 +288,9 @@
             background: none;
             border: none;
             color: #666;
-            font-size: 20px;
+            font-size: 24px;
             cursor: pointer;
+            z-index: 10;
         }
 
     </style>
@@ -240,22 +307,18 @@
                 <button class="btn-calc bg-light">±</button>
                 <button class="btn-calc bg-light">%</button>
                 <button class="btn-calc bg-orange" onclick="appendCalc('/')">÷</button>
-
                 <button class="btn-calc bg-grey" onclick="appendCalc('7')">7</button>
                 <button class="btn-calc bg-grey" onclick="appendCalc('8')">8</button>
                 <button class="btn-calc bg-grey" onclick="appendCalc('9')">9</button>
                 <button class="btn-calc bg-orange" onclick="appendCalc('*')">×</button>
-
                 <button class="btn-calc bg-grey" onclick="appendCalc('4')">4</button>
                 <button class="btn-calc bg-grey" onclick="appendCalc('5')">5</button>
                 <button class="btn-calc bg-grey" onclick="appendCalc('6')">6</button>
                 <button class="btn-calc bg-orange" onclick="appendCalc('-')">-</button>
-
                 <button class="btn-calc bg-grey" onclick="appendCalc('1')">1</button>
                 <button class="btn-calc bg-grey" onclick="appendCalc('2')">2</button>
                 <button class="btn-calc bg-grey" onclick="appendCalc('3')">3</button>
                 <button class="btn-calc bg-orange" onclick="appendCalc('+')">+</button>
-
                 <button class="btn-calc bg-grey zero" onclick="appendCalc('0')">0</button>
                 <button class="btn-calc bg-grey" onclick="appendCalc('.')">.</button>
                 <button class="btn-calc bg-orange" onclick="calcResult()">=</button>
@@ -267,103 +330,182 @@
             <button class="back-btn" onclick="flipCard()">↻</button>
             
             <div class="header-tools">
-                <h2>Cálculo Real</h2>
+                <h2>klculadolar</h2>
+                <button class="refresh-btn" id="refreshBtn" onclick="fetchRates()" title="Actualizar Tasas">⟳</button>
             </div>
 
-            <div class="input-row">
-                <div class="input-group">
-                    <label>Tasa 1</label>
-                    <input type="number" id="rate1" placeholder="0.00">
+            <div class="rates-grid">
+                <div class="rate-box">
+                    <label>BCV</label>
+                    <input type="number" id="rate-bcv" value="0.00" oninput="calculate()">
                 </div>
-                <div class="input-group">
-                    <label>Tasa 2</label>
-                    <input type="number" id="rate2" placeholder="0.00">
+                <div class="rate-box">
+                    <label>Paralelo</label>
+                    <input type="number" id="rate-par" value="0.00" oninput="calculate()">
+                </div>
+                <div class="rate-box">
+                    <label>Binance</label>
+                    <input type="number" id="rate-bin" value="0.00" oninput="calculate()">
+                </div>
+                <div class="rate-box">
+                    <label>Euro</label>
+                    <input type="number" id="rate-eur" value="0.00" oninput="calculate()">
+                </div>
+                <div class="rate-box">
+                    <label>Promedio</label>
+                    <input type="number" id="rate-avg" value="0.00" readonly style="background:#2a2a2a; color:#aaa;">
                 </div>
             </div>
 
-            <div class="input-row">
-                <div class="input-group">
-                    <label>Precio A</label>
-                    <input type="number" id="price1" placeholder="0">
+            <div class="main-input-section">
+                <div class="main-input-group">
+                    <label>Monto Base ($ USD)</label>
+                    <input type="number" id="amount-usd" placeholder="0.00" oninput="calculate()">
                 </div>
-                <div class="input-group">
-                    <label>Precio B</label>
-                    <input type="number" id="price2" placeholder="0">
+            </div>
+
+            <div class="results-container">
+                <div class="result-row">
+                    <span class="result-label">BCV:</span>
+                    <span class="result-value" id="res-bcv">Bs 0.00</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Paralelo:</span>
+                    <span class="result-value" id="res-par">Bs 0.00</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Binance:</span>
+                    <span class="result-value" id="res-bin">Bs 0.00</span>
                 </div>
             </div>
 
             <div class="actions">
-                <button class="btn-tool btn-snap" onclick="takeSnapshot()">📸 Snapshot</button>
-                <button class="btn-tool btn-clear" onclick="clearLog()">Borrar Log</button>
+                <button class="btn-tool btn-snap" onclick="takeSnapshot()">📸 Guardar Snapshot</button>
+                <button class="btn-tool btn-clear" onclick="clearLog()">Limpiar</button>
             </div>
 
             <div class="log-container" id="log-list">
                 </div>
 
-            <button class="copy-btn" onclick="copyLog()">Copiar Log al Portapapeles</button>
+            <button class="copy-btn" onclick="copyLog()">Copiar Log</button>
 
         </div>
     </div>
 </div>
 
 <script>
-    /* --- LOGICA DEL FLIP --- */
+    /* --- 1. LÓGICA VISUAL (FLIP & CALCULADORA) --- */
     const card = document.getElementById('card');
-    function flipCard() {
-        card.classList.toggle('is-flipped');
-    }
+    const flipCard = () => card.classList.toggle('is-flipped');
 
-    /* --- LOGICA CALCULADORA IPHONE (SOLO VISUAL/BASICA) --- */
     const calcScreen = document.getElementById('calc-screen');
     let currentExp = '';
 
     function appendCalc(val) {
         if(calcScreen.innerText === '0' && val !== '.') currentExp = '';
         currentExp += val;
-        // Reemplazar operadores para visualización
         calcScreen.innerText = currentExp.replace('*','×').replace('/','÷');
     }
-
-    function clearCalc() {
-        currentExp = '';
-        calcScreen.innerText = '0';
+    function clearCalc() { currentExp = ''; calcScreen.innerText = '0'; }
+    function calcResult() {
+        try { calcScreen.innerText = eval(currentExp) || 0; currentExp = calcScreen.innerText; } 
+        catch { calcScreen.innerText = 'Error'; }
     }
 
-    function calcResult() {
+    /* --- 2. LÓGICA KLCULADOLAR --- */
+    
+    // Función para obtener tasas (Simulación de Fetch a API Dolar Venezuela)
+    async function fetchRates() {
+        const btn = document.getElementById('refreshBtn');
+        btn.classList.add('loading');
+        
+        // NOTA: Muchas APIs de Venezuela bloquean peticiones directas desde navegador (CORS).
+        // Aquí simulo una conexión exitosa con valores cercanos a la realidad para que veas el efecto.
+        // Si tienes tu propio endpoint, cámbialo en la variable url.
+        
         try {
-            // Eval es peligroso en producción real, pero para calculadora simple local está ok
-            // Ojo: Esto es solo camuflaje
-            const res = eval(currentExp); 
-            calcScreen.innerText = res;
-            currentExp = res.toString();
-        } catch(e) {
-            calcScreen.innerText = 'Error';
-            currentExp = '';
+            // Ejemplo de API pública (puede fallar por CORS dependiendo del navegador)
+            const response = await fetch('https://pydolarvenezuela-api.vercel.app/api/v1/dollar/page?page=monitor', {
+                 method: 'GET',
+                 mode: 'cors'
+            });
+            
+            // SI LA API RESPONDE (Lógica Ideal):
+            if(response.ok) {
+                const data = await response.json();
+                // Asignaríamos valores aquí según la estructura del JSON
+                // document.getElementById('rate-bcv').value = data...
+            } else {
+                throw new Error("API Blocked");
+            }
+
+        } catch (error) {
+            // FALLBACK: Si falla la conexión (común en Vzla), ponemos valores referencia
+            // O dejamos que el usuario edite.
+            console.log("Usando valores manuales/referencia debido a error de red:", error);
+            
+            // Valores dummy para probar la UI (El usuario debe corregirlos si no hay internet)
+            // En producción, esto se puede quitar para dejar los campos vacíos.
+            document.getElementById('rate-bcv').value = "45.50"; 
+            document.getElementById('rate-par').value = "52.30";
+            document.getElementById('rate-bin').value = "51.80";
+            document.getElementById('rate-eur').value = "49.10";
+            
+            calculate(); // Recalcular promedio y totales
+        } finally {
+            btn.classList.remove('loading');
         }
     }
 
-    /* --- LOGICA HERRAMIENTA REAL --- */
+    // Calculo Principal
+    function calculate() {
+        const usd = parseFloat(document.getElementById('amount-usd').value) || 0;
+        
+        const rBcv = parseFloat(document.getElementById('rate-bcv').value) || 0;
+        const rPar = parseFloat(document.getElementById('rate-par').value) || 0;
+        const rBin = parseFloat(document.getElementById('rate-bin').value) || 0;
+        const rEur = parseFloat(document.getElementById('rate-eur').value) || 0;
+
+        // Calcular Promedio (Si hay paralelo y bcv, promedio simple, si no, lo que haya)
+        let sum = 0, count = 0;
+        if(rBcv > 0) { sum += rBcv; count++; }
+        if(rPar > 0) { sum += rPar; count++; }
+        // Si quieres incluir binance en el promedio, descomenta:
+        // if(rBin > 0) { sum += rBin; count++; }
+
+        const avg = count > 0 ? (sum / count).toFixed(2) : 0.00;
+        document.getElementById('rate-avg').value = avg;
+
+        // Mostrar Resultados en Bs
+        document.getElementById('res-bcv').innerText = "Bs " + (usd * rBcv).toLocaleString('es-VE', {minimumFractionDigits: 2});
+        document.getElementById('res-par').innerText = "Bs " + (usd * rPar).toLocaleString('es-VE', {minimumFractionDigits: 2});
+        document.getElementById('res-bin').innerText = "Bs " + (usd * rBin).toLocaleString('es-VE', {minimumFractionDigits: 2});
+    }
+
+    /* --- 3. SNAPSHOTS LOG SYSTEM --- */
     const logList = document.getElementById('log-list');
-    
-    // Función para tomar Snapshot
+
     function takeSnapshot() {
-        const r1 = document.getElementById('rate1').value || '-';
-        const r2 = document.getElementById('rate2').value || '-';
-        const p1 = document.getElementById('price1').value || '-';
-        const p2 = document.getElementById('price2').value || '-';
-
-        // Lógica de ejemplo: Multiplicamos Tasa1 * Precio1 (Puedes cambiar esto a tu logica real)
-        // Solo guardo los valores crudos para el ejemplo
+        const usd = document.getElementById('amount-usd').value || '0';
+        const bcv = document.getElementById('rate-bcv').value;
+        const par = document.getElementById('rate-par').value;
         
-        const timestamp = new Date().toLocaleTimeString();
-        const textRow = `[${timestamp}] T1:${r1} | T2:${r2} | P1:${p1} | P2:${p2}`;
+        // Cálculo del momento
+        const totalBcv = (parseFloat(usd) * parseFloat(bcv)).toFixed(2);
+        const totalPar = (parseFloat(usd) * parseFloat(par)).toFixed(2);
 
-        // Crear elemento visual
+        const time = new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'});
+        
         const div = document.createElement('div');
-        div.className = 'log-item';
-        div.innerText = textRow;
+        div.className = 'log-entry';
+        div.innerHTML = `
+            <div class="log-header">Base: $${usd} | ${time}</div>
+            <div class="log-details">
+                <span>BCV: ${bcv} -> Bs ${totalBcv}</span>
+                <span>Par: ${par} -> Bs ${totalPar}</span>
+            </div>
+        `;
         
-        // Agregar al principio del log
         logList.insertBefore(div, logList.firstChild);
     }
 
@@ -371,22 +513,19 @@
         logList.innerHTML = '';
     }
 
-    // Copiar todo el log
     function copyLog() {
-        const items = document.querySelectorAll('.log-item');
-        let textToCopy = "--- SNAPSHOT LOG ---\n";
+        let text = "--- KLCULADOLAR LOG ---\n";
+        document.querySelectorAll('.log-entry').forEach(entry => {
+            const header = entry.querySelector('.log-header').innerText;
+            const details = entry.querySelector('.log-details').innerText.replace(/\n/g, " | ");
+            text += `${header} [${details}]\n`;
+        });
         
-        items.forEach(item => {
-            textToCopy += item.innerText + "\n";
-        });
-
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            alert('Log copiado!');
-        }).catch(err => {
-            console.error('Error al copiar', err);
-        });
+        navigator.clipboard.writeText(text).then(() => alert("Copiado!")).catch(e => console.error(e));
     }
 
+    // Iniciar
+    calculate();
 </script>
 
 </body>
