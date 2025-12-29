@@ -1,3 +1,29 @@
+/*
+   ==========================================================================
+   Calculadolar 
+   ==========================================================================
+   
+   // Seccion-000: Configuración Inicial y Librerías (HTML Head)
+   // Seccion-001: Estilos CSS Globales y Animaciones 3D
+   // Seccion-002: Componente Principal de React (App)
+   // Seccion-002.1: Definición de Estados (Hooks useState)
+   // Seccion-003: Lógica de Datos (Función fetchRates para la API)
+   // Seccion-004: Efectos Secundarios (useEffect carga inicial)
+   // Seccion-004.1: Lógica de Camuflaje (Trigger '676767')
+   // Seccion-005: Lógica de Negocio (Cálculos de variables activas)
+   // Seccion-006: Componentes de UI Dinámicos (Textos informativos)
+   // Seccion-006.1: Semáforo de Tasas (Lógica de colores y alertas)
+   // Seccion-007: Gestión de Historial (Función saveLog)
+   // Seccion-008: Núcleo de Calculadoras (Función doMath genérica)
+   // Seccion-009: Controladores de Eventos (Handlers handleMain y handleMini)
+   // Seccion-010: Renderizado Visual (Retorno JSX)
+   // Seccion-010.1: Vista Frontal (Calculadora estilo iOS)
+   // Seccion-010.2: Vista Trasera - Header (Barra superior y Ticker)
+   // Seccion-010.3: Vista Trasera - Contenido (Inputs, Resultados, Semáforo)
+   // Seccion-010.4: Vista Trasera - Mini Calculadora
+   // Seccion-011: Renderizado en el DOM (Montaje de React)
+*/
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,8 +61,9 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // Seccion-002: Componente Principal
         const App = () => {
-            // --- ESTADOS ---
+            // Seccion-002.1: Definición de Estados (Hooks)
             const [isFlipped, setIsFlipped] = useState(false);
             
             // --- ESTADO CALC GRANDE ---
@@ -67,7 +94,8 @@
             const [log, setLog] = useState([]);
             const [showHistory, setShowHistory] = useState(false);
 
-            // --- 1. FETCH API (Con borrado de inputs manuales) ---
+            // Seccion-003: Lógica de Datos (API)
+            // Obtiene tasas de cambio desde APIs externas
             const fetchRates = async () => {
                 setLoading(true);
                 
@@ -87,6 +115,7 @@
                         if(r2.ok) dataEUR = await r2.json();
                     } catch(e){}
 
+                    // Función auxiliar para extraer valor seguro
                     const getVal = (arr, key, def) => {
                         const item = arr.find(d => d.fuente === key || d.titulo === key);
                         return item && item.promedio ? parseFloat(item.promedio) : def;
@@ -107,9 +136,12 @@
                 }
             };
 
+            // Seccion-004: Efectos Secundarios (Hooks)
+            // Carga inicial de datos
             useEffect(() => { fetchRates(); }, []);
 
-            // --- 2. CAMUFLAJE ---
+            // Seccion-004.1: Camuflaje
+            // Activa la vista oculta al detectar código específico
             useEffect(() => {
                 if (mainDisp === '676767') {
                     setTimeout(() => {
@@ -119,13 +151,14 @@
                 }
             }, [mainDisp]);
 
-            // --- 3. LÓGICA DE NEGOCIO ---
+            // Seccion-005: Lógica de Negocio (Cálculos)
             const activeBcv = inputs.customBcv ? parseFloat(inputs.customBcv) : rates.bcv;
             const activePar = inputs.customParalelo ? parseFloat(inputs.customParalelo) : rates.paralelo;
             const basePrice = parseFloat(inputs.priceDollar);
             const payAmount = parseFloat(inputs.payAmount);
 
-            // Textos Chiquitos
+            // Seccion-006: Componentes de UI Dinámicos
+            // Muestra conversión rápida de precio base
             const infoBase = basePrice > 0 ? (
                 <div className="flex flex-col gap-0.5 mt-1 text-[9px] font-mono text-gray-500">
                     <div className="flex justify-between"><span>Oficial:</span> <span className="text-gray-300 font-bold">Bs {(basePrice * activeBcv).toFixed(2)}</span></div>
@@ -133,6 +166,7 @@
                 </div>
             ) : <div className="mt-1 text-[9px] text-gray-600 italic">Ingresa precio...</div>;
 
+            // Muestra conversión inversa del monto a pagar
             const infoPay = payAmount > 0 ? (
                 inputs.currency === 'Bs' ? (
                     <div className="flex flex-col gap-0.5 mt-1 text-[9px] font-mono text-gray-500">
@@ -147,7 +181,8 @@
                 )
             ) : <div className="mt-1 text-[9px] text-gray-600 italic">Ingresa monto...</div>;
 
-            // Semáforo
+            // Seccion-006.1: Semáforo de Tasas
+            // Determina el color y mensaje según la tasa implícita
             let tasaImp = 0;
             let status = { text: 'ESPERANDO', color: 'text-gray-500', bg: 'bg-gray-800' };
             
@@ -163,6 +198,8 @@
                 else status = { text: 'TASA MIXTA / INFLADA', color: 'text-yellow-400', bg: 'bg-yellow-900/30 border border-yellow-600' };
             }
 
+            // Seccion-007: Gestión de Historial (Log)
+            // Guarda el cálculo actual en el estado
             const saveLog = () => {
                 if(tasaImp > 0) {
                     setLog([{id: Date.now(), rate: tasaImp.toFixed(2), status: status.text}, ...log]);
@@ -175,9 +212,8 @@
                 }
             };
 
-            // --- LÓGICA CALCULADORAS (Simplificada e Independiente) ---
-            
-            // Función genérica pura
+            // Seccion-008: Núcleo de Calculadoras
+            // Función pura para operaciones aritméticas
             const doMath = (disp, setDisp, wait, setWait, op, setOp, val, setVal, input) => {
                 if(typeof input === 'number' || input === '.') {
                     if(wait) {
@@ -211,15 +247,17 @@
                 }
             };
 
-            // Handlers específicos
+            // Seccion-009: Controladores de Eventos
+            // Wrappers para conectar la UI con la lógica matemática
             const handleMain = (x) => doMath(mainDisp, setMainDisp, mainWait, setMainWait, mainOp, setMainOp, mainVal, setMainVal, x);
             const handleMini = (x) => doMath(miniDisp, setMiniDisp, miniWait, setMiniWait, miniOp, setMiniOp, miniVal, setMiniVal, x);
 
+            // Seccion-010: Renderizado (JSX)
             return (
                 <div className="scene">
                     <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
                         
-                        {/* === FRENTE: CALCULADORA GRANDE === */}
+                        {/* Seccion-010.1: Vista Frontal (Calculadora Grande) */}
                         <div className="card-face bg-black text-white p-5 flex flex-col justify-end">
                             <div className="flex-1 flex items-end justify-end px-2 mb-6"><span className="text-7xl font-light truncate">{mainDisp}</span></div>
                             <div className="grid grid-cols-4 gap-3 mb-8">
@@ -234,10 +272,10 @@
                             </div>
                         </div>
 
-                        {/* === DORSO: HERRAMIENTA === */}
+                        {/* Seccion-010.2: Vista Trasera (Herramienta Pro) */}
                         <div className="card-face card-back text-white font-sans relative">
                             
-                            {/* Header */}
+                            {/* Header y Ticker de Tasas */}
                             <div className="pt-4 px-4 pb-2 bg-[#1a1a1a] border-b border-gray-800">
                                 <div className="flex justify-between items-center mb-2">
                                     <div className="flex items-center gap-2">
@@ -261,10 +299,10 @@
                                 </div>
                             </div>
 
-                            {/* Contenido Scrollable */}
+                            {/* Seccion-010.3: Contenido Inputs y Resultados */}
                             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
                                 
-                                {/* Tasas */}
+                                {/* Tasas Personalizables */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="text-[10px] text-green-500 font-bold ml-1">Tasa BCV</label>
@@ -278,7 +316,7 @@
 
                                 <div className="h-px bg-gray-800 my-1"></div>
 
-                                {/* Precios */}
+                                {/* Inputs de Precios */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-[10px] text-gray-400 uppercase font-bold ml-1">Precio Pagando en $</label>
@@ -295,7 +333,7 @@
                                     </div>
                                 </div>
 
-                                {/* Resultado Compacto con Botón Pequeño */}
+                                {/* Resultado Compacto */}
                                 <div className="flex gap-2 items-stretch h-16 mt-1">
                                     <div className={`flex-1 rounded-xl border border-dashed border-gray-700 bg-gray-900/50 flex flex-col items-center justify-center relative p-1`}>
                                         <span className="text-[9px] text-gray-500 uppercase tracking-wider">Tasa Implícita</span>
@@ -315,7 +353,7 @@
 
                                 <div className="h-px bg-gray-800 my-1"></div>
 
-                                {/* Mini Calculadora (Separada) */}
+                                {/* Seccion-010.4: Mini Calculadora */}
                                 <div className="bg-[#1c1c1e] rounded-2xl p-3 border border-gray-800 mt-auto">
                                     <div className="text-right text-2xl font-light text-white mb-3 h-8 px-2 overflow-hidden">{miniDisp}</div>
                                     <div className="grid grid-cols-4 gap-2">
@@ -344,6 +382,7 @@
             );
         };
 
+        // Seccion-011: Renderizado en el DOM
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
