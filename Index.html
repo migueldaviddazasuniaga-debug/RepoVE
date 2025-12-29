@@ -305,12 +305,12 @@
                                 {/* Tasas Personalizables */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-[10px] text-green-500 font-bold ml-1">Tasa BCV</label>
-                                        <input type="number" placeholder={rates.bcv} value={inputs.customBcv} onChange={e => setInputs({...inputs, customBcv: e.target.value})} className="w-full bg-[#222] border border-green-600 text-green-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-green-500 placeholder-green-500/30" />
+                                        <label className="text-[10px] text-red-500 font-bold ml-1">Tasa BCV</label>
+                                        <input type="number" placeholder={rates.bcv} value={inputs.customBcv} onChange={e => setInputs({...inputs, customBcv: e.target.value})} className="w-full bg-[#222] border border-red-600 text-red-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-red-500 placeholder-green-500/30" />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-red-500 font-bold ml-1">Tasa Paralelo</label>
-                                        <input type="number" placeholder={rates.paralelo} value={inputs.customParalelo} onChange={e => setInputs({...inputs, customParalelo: e.target.value})} className="w-full bg-[#222] border border-red-600 text-red-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-red-500 placeholder-red-500/30" />
+                                        <label className="text-[10px] text-green-500 font-bold ml-1">Tasa Paralelo</label>
+                                        <input type="number" placeholder={rates.paralelo} value={inputs.customParalelo} onChange={e => setInputs({...inputs, customParalelo: e.target.value})} className="w-full bg-[#222] border border-green-600 text-green-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-green-500 placeholder-red-500/30" />
                                     </div>
                                 </div>
 
