@@ -13,24 +13,18 @@
         body { background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; overflow: hidden; margin: 0; }
         
         /* Escena 3D */
-        .scene { perspective: 1000px; width: 375px; height: 720px; position: relative; }
-        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+        .scene { perspective: 1000px; width: 375px; height: 740px; position: relative; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1); transform-style: preserve-3d; }
         .card-inner.flipped { transform: rotateY(180deg); }
         
-        /* Caras de la Tarjeta */
         .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 40px; overflow: hidden; border: 1px solid #333; background: #000; }
+        /* La cara trasera debe estar girada de inicio */
         .card-back { transform: rotateY(180deg); background-color: #121212; display: flex; flex-direction: column; }
         
-        /* UI Utils */
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .ios-btn:active { transform: scale(0.95); opacity: 0.8; }
         .mini-btn:active { background-color: #555 !important; }
-
-        /* Scroll oculto */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Ticker Items */
         .ticker-item { display: inline-flex; align-items: center; gap: 4px; }
     </style>
 </head>
@@ -41,34 +35,25 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        const COLORS = {
-            vinotinto: '#800020',
-            orange: '#ff9f0a',
-            dark: '#333333',
-            gray: '#a5a5a5'
-        };
-
         const App = () => {
             // --- ESTADOS ---
             const [isFlipped, setIsFlipped] = useState(false);
             
-            // Calculadora Principal
+            // --- ESTADO CALC GRANDE ---
             const [mainDisp, setMainDisp] = useState('0');
             const [mainWait, setMainWait] = useState(false);
             const [mainOp, setMainOp] = useState(null);
             const [mainVal, setMainVal] = useState(null);
 
-            // Mini Calculadora
+            // --- ESTADO MINI CALC ---
             const [miniDisp, setMiniDisp] = useState('0');
             const [miniWait, setMiniWait] = useState(false);
             const [miniOp, setMiniOp] = useState(null);
             const [miniVal, setMiniVal] = useState(null);
 
-            // Datos y Config
+            // Datos
             const [loading, setLoading] = useState(false);
-            const [rates, setRates] = useState({ 
-                bcv: 0, paralelo: 0, euro: 0, binance: 0, promedio: 0 
-            });
+            const [rates, setRates] = useState({ bcv: 46.20, paralelo: 54.50, euro: 49.10, binance: 55.00, promedio: 52.30 });
             
             const [inputs, setInputs] = useState({
                 priceDollar: '',
@@ -78,29 +63,33 @@
                 customParalelo: ''
             });
 
+            // Log
             const [log, setLog] = useState([]);
+            const [showHistory, setShowHistory] = useState(false);
 
-            // --- API FETCH ---
+            // --- 1. FETCH API (Con borrado de inputs manuales) ---
             const fetchRates = async () => {
                 setLoading(true);
+                
+                // Paso 1: Limpiar inputs manuales para que se vea el cambio
+                setInputs(prev => ({...prev, customBcv: '', customParalelo: ''}));
+
                 try {
-                    // Intentamos obtener datos. Usamos try/catch individuales para robustez.
+                    // Intentamos obtener datos
                     let dataUSD = [], dataEUR = [];
-                    
                     try {
-                        const res1 = await fetch('https://ve.dolarapi.com/v1/dolares');
-                        if(res1.ok) dataUSD = await res1.json();
-                    } catch(e) { console.log('Error USD API'); }
+                        const r1 = await fetch('https://ve.dolarapi.com/v1/dolares');
+                        if(r1.ok) dataUSD = await r1.json();
+                    } catch(e){}
 
                     try {
-                        const res2 = await fetch('https://ve.dolarapi.com/v1/euros');
-                        if(res2.ok) dataEUR = await res2.json();
-                    } catch(e) { console.log('Error EUR API'); }
+                        const r2 = await fetch('https://ve.dolarapi.com/v1/euros');
+                        if(r2.ok) dataEUR = await r2.json();
+                    } catch(e){}
 
-                    // Extracción segura de datos
-                    const getVal = (arr, key, val) => {
+                    const getVal = (arr, key, def) => {
                         const item = arr.find(d => d.fuente === key || d.titulo === key);
-                        return item && item.promedio ? parseFloat(item.promedio) : val;
+                        return item && item.promedio ? parseFloat(item.promedio) : def;
                     };
 
                     setRates({
@@ -112,9 +101,7 @@
                     });
 
                 } catch (e) {
-                    console.error("Error General API", e);
-                    // Fallback visual
-                    setRates(prev => ({...prev, bcv: 46.20, paralelo: 54.50})); 
+                    console.error("Error API", e);
                 } finally {
                     setLoading(false);
                 }
@@ -122,23 +109,23 @@
 
             useEffect(() => { fetchRates(); }, []);
 
-            // --- DETECTOR DE CÓDIGO SECRETO ---
+            // --- 2. CAMUFLAJE ---
             useEffect(() => {
                 if (mainDisp === '676767') {
                     setTimeout(() => {
                         setIsFlipped(true);
                         setMainDisp('0'); setMainVal(null); setMainOp(null);
-                    }, 300);
+                    }, 200);
                 }
             }, [mainDisp]);
 
-            // --- CÁLCULOS ---
+            // --- 3. LÓGICA DE NEGOCIO ---
             const activeBcv = inputs.customBcv ? parseFloat(inputs.customBcv) : rates.bcv;
             const activePar = inputs.customParalelo ? parseFloat(inputs.customParalelo) : rates.paralelo;
             const basePrice = parseFloat(inputs.priceDollar);
             const payAmount = parseFloat(inputs.payAmount);
 
-            // Generador de Info Text (Microtextos)
+            // Textos Chiquitos
             const infoBase = basePrice > 0 ? (
                 <div className="flex flex-col gap-0.5 mt-1 text-[9px] font-mono text-gray-500">
                     <div className="flex justify-between"><span>Oficial:</span> <span className="text-gray-300 font-bold">Bs {(basePrice * activeBcv).toFixed(2)}</span></div>
@@ -160,7 +147,7 @@
                 )
             ) : <div className="mt-1 text-[9px] text-gray-600 italic">Ingresa monto...</div>;
 
-            // Lógica Semáforo
+            // Semáforo
             let tasaImp = 0;
             let status = { text: 'ESPERANDO', color: 'text-gray-500', bg: 'bg-gray-800' };
             
@@ -179,61 +166,71 @@
             const saveLog = () => {
                 if(tasaImp > 0) {
                     setLog([{id: Date.now(), rate: tasaImp.toFixed(2), status: status.text}, ...log]);
-                    // Efecto visual simple de guardado
-                    const btn = document.getElementById('saveBtn');
+                    // Animación simple del botón
+                    const btn = document.getElementById('logIcon');
                     if(btn) {
-                        const original = btn.innerText;
-                        btn.innerText = "¡GUARDADO!";
-                        btn.style.backgroundColor = "#2ecc71";
-                        setTimeout(() => { 
-                            btn.innerText = original; 
-                            btn.style.backgroundColor = COLORS.vinotinto; 
-                        }, 1000);
+                        btn.style.color = '#2ecc71';
+                        setTimeout(() => btn.style.color = 'white', 1000);
                     }
                 }
             };
 
-            // --- LÓGICA CALCULADORAS ---
-            const handleCalc = (val, setVal, disp, setDisp, wait, setWait, op, setOp, input) => {
+            // --- LÓGICA CALCULADORAS (Simplificada e Independiente) ---
+            
+            // Función genérica pura
+            const doMath = (disp, setDisp, wait, setWait, op, setOp, val, setVal, input) => {
                 if(typeof input === 'number' || input === '.') {
-                    if(wait) { setDisp(String(input)); setWait(false); }
-                    else setDisp(disp === '0' && input !== '.' ? String(input) : disp + input);
-                } else if (['+','-','*','/'].includes(input)) {
-                    const current = parseFloat(disp);
-                    if(val === null) setVal(current);
-                    else if(op) {
-                        const res = op === '+' ? val + current : op === '-' ? val - current : op === '*' ? val * current : val / current;
-                        setVal(res); setDisp(String(res));
+                    if(wait) {
+                        setDisp(String(input));
+                        setWait(false);
+                    } else {
+                        setDisp(disp === '0' && input !== '.' ? String(input) : disp + input);
                     }
-                    setWait(true); setOp(input);
+                } else if (['+','-','*','/'].includes(input)) {
+                    const curr = parseFloat(disp);
+                    if(val === null) {
+                        setVal(curr);
+                    } else if(op) {
+                        const res = op==='+'?val+curr : op==='-'?val-curr : op==='*'?val*curr : val/curr;
+                        setVal(res);
+                        setDisp(String(res));
+                    }
+                    setWait(true);
+                    setOp(input);
                 } else if (input === '=') {
                     if(op && val !== null) {
-                        const current = parseFloat(disp);
-                        const res = op === '+' ? val + current : op === '-' ? val - current : op === '*' ? val * current : val / current;
-                        setVal(null); setOp(null); setDisp(String(res)); setWait(true);
+                        const curr = parseFloat(disp);
+                        const res = op==='+'?val+curr : op==='-'?val-curr : op==='*'?val*curr : val/curr;
+                        setVal(null);
+                        setOp(null);
+                        setDisp(String(res));
+                        setWait(true);
                     }
                 } else if (input === 'AC') {
                     setDisp('0'); setVal(null); setOp(null); setWait(false);
                 }
             };
 
-            const mainInput = (x) => handleCalc(mainVal, setMainVal, mainDisp, setMainDisp, mainWait, setMainWait, mainOp, setMainOp, x);
-            const miniInput = (x) => handleCalc(miniVal, setMiniVal, miniDisp, setMiniDisp, miniWait, setMiniWait, miniOp, setMiniOp, x);
+            // Handlers específicos
+            const handleMain = (x) => doMath(mainDisp, setMainDisp, mainWait, setMainWait, mainOp, setMainOp, mainVal, setMainVal, x);
+            const handleMini = (x) => doMath(miniDisp, setMiniDisp, miniWait, setMiniWait, miniOp, setMiniOp, miniVal, setMiniVal, x);
 
             return (
                 <div className="scene">
                     <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
                         
-                        {/* === FRENTE: CALCULADORA === */}
+                        {/* === FRENTE: CALCULADORA GRANDE === */}
                         <div className="card-face bg-black text-white p-5 flex flex-col justify-end">
                             <div className="flex-1 flex items-end justify-end px-2 mb-6"><span className="text-7xl font-light truncate">{mainDisp}</span></div>
                             <div className="grid grid-cols-4 gap-3 mb-8">
                                 {['AC','+/-','%','/','7','8','9','*','4','5','6','-','1','2','3','+'].map(btn => (
-                                    <button key={btn} onClick={() => mainInput(btn)} className={`h-16 rounded-full text-2xl font-medium ios-btn ${['/','*','-','+'].includes(btn) ? 'bg-[#ff9f0a]' : ['AC','+/-','%'].includes(btn) ? 'bg-[#a5a5a5] text-black' : 'bg-[#333]'}`}>{btn}</button>
+                                    <button key={btn} onClick={() => handleMain(btn === 'AC' ? 'AC' : isNaN(btn) ? btn : parseInt(btn))} className={`h-16 rounded-full text-2xl font-medium ios-btn ${['/','*','-','+'].includes(btn) ? 'bg-[#ff9f0a]' : ['AC','+/-','%'].includes(btn) ? 'bg-[#a5a5a5] text-black' : 'bg-[#333]'}`}>
+                                        {btn}
+                                    </button>
                                 ))}
-                                <button onClick={() => mainInput(0)} className="col-span-2 h-16 rounded-full bg-[#333] text-2xl font-medium ios-btn pl-6 text-left">0</button>
-                                <button onClick={() => mainInput('.')} className="h-16 rounded-full bg-[#333] text-2xl font-medium ios-btn">.</button>
-                                <button onClick={() => mainInput('=')} className="h-16 rounded-full bg-[#ff9f0a] text-2xl font-medium ios-btn">=</button>
+                                <button onClick={() => handleMain(0)} className="col-span-2 h-16 rounded-full bg-[#333] text-2xl font-medium ios-btn pl-6 text-left">0</button>
+                                <button onClick={() => handleMain('.')} className="h-16 rounded-full bg-[#333] text-2xl font-medium ios-btn">.</button>
+                                <button onClick={() => handleMain('=')} className="h-16 rounded-full bg-[#ff9f0a] text-2xl font-medium ios-btn">=</button>
                             </div>
                         </div>
 
@@ -245,7 +242,9 @@
                                 <div className="flex justify-between items-center mb-2">
                                     <div className="flex items-center gap-2">
                                         <h1 className="text-xl font-bold text-red-600">Calculadolar Pro</h1>
-                                        <button onClick={fetchRates} className={`text-gray-400 ${loading ? 'animate-spin' : ''}`}>⟳</button>
+                                        <button onClick={fetchRates} className={`p-1.5 bg-gray-800 rounded-full hover:bg-gray-700 text-gray-400 transition-all ${loading ? 'animate-spin text-white' : ''}`}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                                        </button>
                                     </div>
                                     <button onClick={() => setIsFlipped(false)} className="text-gray-500 hover:text-white">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -269,11 +268,11 @@
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="text-[10px] text-green-500 font-bold ml-1">Tasa BCV</label>
-                                        <input type="number" placeholder={rates.bcv} value={inputs.customBcv} onChange={e => setInputs({...inputs, customBcv: e.target.value})} className="w-full bg-[#222] border border-green-600 text-green-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-green-500" />
+                                        <input type="number" placeholder={rates.bcv} value={inputs.customBcv} onChange={e => setInputs({...inputs, customBcv: e.target.value})} className="w-full bg-[#222] border border-green-600 text-green-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-green-500 placeholder-green-500/30" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] text-red-500 font-bold ml-1">Tasa Paralelo</label>
-                                        <input type="number" placeholder={rates.paralelo} value={inputs.customParalelo} onChange={e => setInputs({...inputs, customParalelo: e.target.value})} className="w-full bg-[#222] border border-red-600 text-red-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-red-500" />
+                                        <input type="number" placeholder={rates.paralelo} value={inputs.customParalelo} onChange={e => setInputs({...inputs, customParalelo: e.target.value})} className="w-full bg-[#222] border border-red-600 text-red-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-red-500 placeholder-red-500/30" />
                                     </div>
                                 </div>
 
@@ -296,8 +295,8 @@
                                     </div>
                                 </div>
 
-                                {/* Resultado */}
-                                <div className="flex gap-2 items-stretch h-20 mt-1">
+                                {/* Resultado Compacto con Botón Pequeño */}
+                                <div className="flex gap-2 items-stretch h-16 mt-1">
                                     <div className={`flex-1 rounded-xl border border-dashed border-gray-700 bg-gray-900/50 flex flex-col items-center justify-center relative p-1`}>
                                         <span className="text-[9px] text-gray-500 uppercase tracking-wider">Tasa Implícita</span>
                                         {tasaImp > 0 ? (
@@ -306,24 +305,34 @@
                                                 <div className={`text-[8px] px-1.5 py-0.5 rounded uppercase font-bold mt-1 ${status.color} ${status.bg}`}>{status.text}</div>
                                             </>
                                         ) : <span className="text-xl font-bold text-gray-700">--.--</span>}
+                                        
+                                        {/* Botón Log Pequeño FLOTANTE dentro del recuadro */}
+                                        <button id="logIcon" onClick={saveLog} className="absolute right-2 top-2 text-white hover:scale-110 active:scale-95 transition-transform" title="Guardar Log">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                        </button>
                                     </div>
-                                    <button id="saveBtn" onClick={saveLog} style={{backgroundColor: COLORS.vinotinto}} className="w-16 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-lg active:scale-95 transition-all">
-                                        LOG
-                                    </button>
                                 </div>
 
                                 <div className="h-px bg-gray-800 my-1"></div>
 
-                                {/* Mini Calculadora */}
+                                {/* Mini Calculadora (Separada) */}
                                 <div className="bg-[#1c1c1e] rounded-2xl p-3 border border-gray-800 mt-auto">
                                     <div className="text-right text-2xl font-light text-white mb-3 h-8 px-2 overflow-hidden">{miniDisp}</div>
                                     <div className="grid grid-cols-4 gap-2">
-                                        {['AC','/','*','-'].map(b => <button key={b} onClick={()=>miniInput(b)} className="h-8 rounded-lg bg-[#333] text-sm text-white mini-btn">{b}</button>)}
-                                        {['7','8','9','+'].map(b => <button key={b} onClick={()=>miniInput(b)} className={`h-8 rounded-lg text-sm mini-btn ${b === '+' ? 'bg-[#ff9f0a] text-white' : 'bg-[#444] text-white'}`}>{b}</button>)}
-                                        {['4','5','6','='].map(b => <button key={b} onClick={()=>miniInput(b)} className={`h-8 rounded-lg text-sm mini-btn ${b === '=' ? 'bg-[#ff9f0a] text-white row-span-2 h-[72px]' : 'bg-[#444] text-white'}`} style={b==='='?{gridColumn:'4', gridRow:'3 / span 2'}:{}}>{b}</button>)}
-                                        {['1','2','3'].map(b => <button key={b} onClick={()=>miniInput(b)} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">{b}</button>)}
-                                        <button onClick={()=>miniInput(0)} className="h-8 col-span-2 rounded-lg bg-[#444] text-sm text-white mini-btn">0</button>
-                                        <button onClick={()=>miniInput('.')} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">.</button>
+                                        {['AC','/','*','-'].map(b => <button key={b} onClick={() => handleMini(b === 'AC' ? 'AC' : isNaN(b) ? b : parseInt(b))} className="h-8 rounded-lg bg-[#333] text-sm text-white mini-btn">{b}</button>)}
+                                        {['7','8','9','+'].map(b => <button key={b} onClick={() => handleMini(parseInt(b))} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">{b}</button>)}
+                                        {/* Botón + especial */}
+                                        <button onClick={() => handleMini('+')} className="col-start-4 row-start-2 h-8 rounded-lg bg-[#ff9f0a] text-sm text-white mini-btn">+</button>
+                                        
+                                        {['4','5','6','='].map(b => {
+                                            if(b==='=') return <button key={b} onClick={() => handleMini('=')} className="h-[72px] row-span-2 col-start-4 row-start-3 rounded-lg bg-[#ff9f0a] text-sm text-white mini-btn">=</button>
+                                            return <button key={b} onClick={() => handleMini(parseInt(b))} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">{b}</button>
+                                        })}
+
+                                        {['1','2','3'].map(b => <button key={b} onClick={() => handleMini(parseInt(b))} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">{b}</button>)}
+                                        
+                                        <button onClick={() => handleMini(0)} className="h-8 col-span-2 rounded-lg bg-[#444] text-sm text-white mini-btn">0</button>
+                                        <button onClick={() => handleMini('.')} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">.</button>
                                     </div>
                                 </div>
 
