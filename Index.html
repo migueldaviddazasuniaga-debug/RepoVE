@@ -10,23 +10,25 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; overflow: hidden; }
+        /* --- ESTILOS GENERALES Y ANIMACIONES 3D --- */
+        body { background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; user-select: none; overflow: hidden; }
         
-        /* 3D Scene */
-        .scene { perspective: 1000px; width: 375px; height: 720px; } /* Un poco más alto para que quepa todo */
-        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+        /* Contenedor de la escena 3D */
+        .scene { perspective: 1000px; width: 375px; height: 680px; }
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s; transform-style: preserve-3d; }
         .card-inner.flipped { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 40px; overflow: hidden; border: 1px solid #333; background: #000; }
-        .card-back { transform: rotateY(180deg); background-color: #121212; display: flex; flex-direction: column; }
         
-        /* Inputs & UI */
+        /* Caras de la tarjeta */
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 40px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #333; }
+        .card-back { transform: rotateY(180deg); background-color: #121212; }
+        
+        /* Utilerías Inputs */
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .ios-btn:active { transform: scale(0.95); opacity: 0.8; }
-        .mini-btn:active { background-color: #555 !important; }
-
-        /* Ticker Animation */
-        .ticker-wrap { overflow: hidden; white-space: nowrap; }
-        .ticker-item { display: inline-flex; align-items: center; gap: 4px; }
+        .ios-btn:active { opacity: 0.7; transform: scale(0.95); transition: transform 0.1s; }
+        
+        /* Animación Historial */
+        .accordion-content { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out; max-height: 0; opacity: 0; overflow: hidden; }
+        .accordion-content.open { max-height: 300px; opacity: 1; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-black">
@@ -41,278 +43,334 @@
             iosOrange: '#ff9f0a',
             iosDarkGray: '#333333',
             iosLightGray: '#a5a5a5',
+            green: '#2ecc71',
+            red: '#e74c3c',
+            yellow: '#f1c40f'
         };
 
         const App = () => {
             // --- ESTADOS ---
-            const [isFlipped, setIsFlipped] = useState(false);
+            const [isFlipped, setIsFlipped] = useState(false); // Controla el giro 3D
             
-            // Calc Principal (Camuflaje)
-            const [mainDisp, setMainDisp] = useState('0');
-            const [mainWait, setMainWait] = useState(false);
-            const [mainOp, setMainOp] = useState(null);
-            const [mainVal, setMainVal] = useState(null);
+            // Calculadora
+            const [calcDisplay, setCalcDisplay] = useState('0');
+            const [waitingForOperand, setWaitingForOperand] = useState(false);
+            const [operator, setOperator] = useState(null);
+            const [value, setValue] = useState(null);
 
-            // Mini Calc (Herramienta)
-            const [miniDisp, setMiniDisp] = useState('0');
-            const [miniWait, setMiniWait] = useState(false);
-            const [miniOp, setMiniOp] = useState(null);
-            const [miniVal, setMiniVal] = useState(null);
-
-            // Datos
+            // Herramienta
             const [loading, setLoading] = useState(false);
-            const [rates, setRates] = useState({ 
-                bcv: 0, paralelo: 0, euro: 0, binance: 0, promedio: 0 
-            });
+            const [rates, setRates] = useState({ bcv: 46.20, paralelo: 54.50, euro: 49.10, binance: 55.02, promedio: 52.30 });
             
             const [inputs, setInputs] = useState({
                 priceDollar: '',
                 payAmount: '',
-                currency: 'Bs', 
+                currency: 'Bs', // Dropdown: 'Bs' o '$'
                 customBcv: '',
                 customParalelo: ''
             });
 
-            // Log
             const [log, setLog] = useState([]);
             const [showHistory, setShowHistory] = useState(false);
 
-            // --- API FETCH (Dolar + Euro) ---
+            // --- 1. FETCH API REAL (Lógica de calcu4.html) ---
             const fetchRates = async () => {
                 setLoading(true);
                 try {
-                    // Fetch Dolares
-                    const resUSD = await fetch('https://ve.dolarapi.com/v1/dolares');
-                    const dataUSD = await resUSD.json();
-                    
-                    // Fetch Euros
-                    const resEUR = await fetch('https://ve.dolarapi.com/v1/euros');
-                    const dataEUR = await resEUR.json();
-
-                    const oficial = dataUSD.find(d => d.fuente === 'oficial') || {};
-                    const paralelo = dataUSD.find(d => d.fuente === 'paralelo') || {}; // A veces dolarapi usa 'paralelo' o fuentes específicas
-                    const binance = dataUSD.find(d => d.titulo === 'Binance') || {};
-                    const promedio = dataUSD.find(d => d.titulo === 'Promedio') || {}; // Ojo con el nombre exacto en la API
-                    
-                    const euroOfi = dataEUR.find(d => d.fuente === 'oficial') || {};
-
-                    setRates({
-                        bcv: oficial.promedio || 46.20,
-                        paralelo: paralelo.promedio || 54.50,
-                        binance: binance.promedio || 55.00,
-                        promedio: promedio.promedio || 52.30,
-                        euro: euroOfi.promedio || 49.10
-                    });
-
+                    const res = await fetch('https://ve.dolarapi.com/v1/dolares');
+                    if(res.ok) {
+                        const data = await res.json();
+                        const oficial = data.find(d => d.fuente === 'oficial') || {};
+                        const paralelo = data.find(d => d.fuente === 'paralelo') || {};
+                        
+                        setRates(prev => ({
+                            ...prev,
+                            bcv: oficial.promedio || prev.bcv,
+                            paralelo: paralelo.promedio || prev.paralelo,
+                            // Datos extra para el ticker
+                            binance: (data.find(d => d.titulo === 'Binance') || {}).promedio || prev.binance
+                        }));
+                    }
                 } catch (e) {
-                    console.error("Error API", e);
-                    // Fallback valores dummy si falla
-                    setRates(prev => ({...prev, bcv: 46.20, paralelo: 54.50})); 
+                    console.error("Error fetching rates", e);
                 } finally {
                     setLoading(false);
                 }
             };
 
+            // Cargar tasas al iniciar
             useEffect(() => { fetchRates(); }, []);
 
-            // --- CAMUFLAJE ---
+            // --- 2. CAMUFLAJE (676767) ---
             useEffect(() => {
-                if (mainDisp === '676767') {
+                if (calcDisplay === '676767') {
                     setTimeout(() => {
-                        setIsFlipped(true);
-                        setMainDisp('0'); setMainVal(null); setMainOp(null);
+                        setIsFlipped(true); // Activa el giro
+                        setCalcDisplay('0');
+                        setValue(null);
+                        setOperator(null);
                     }, 300);
                 }
-            }, [mainDisp]);
+            }, [calcDisplay]);
 
-            // --- LÓGICA DE NEGOCIO ---
-            const activeBcv = inputs.customBcv ? parseFloat(inputs.customBcv) : rates.bcv;
-            const activePar = inputs.customParalelo ? parseFloat(inputs.customParalelo) : rates.paralelo;
+            // --- 3. LÓGICA DE CÁLCULO (Motor de calcu4.html) ---
+            
+            // Determinar tasa activa (Input manual o API)
+            const activeBcv = inputs.customBcv !== '' ? parseFloat(inputs.customBcv) : rates.bcv;
+            const activeParalelo = inputs.customParalelo !== '' ? parseFloat(inputs.customParalelo) : rates.paralelo;
             const basePrice = parseFloat(inputs.priceDollar);
             const payAmount = parseFloat(inputs.payAmount);
 
-            // Textos Chiquitos (Layout Vertical)
-            const infoBase = basePrice > 0 ? (
-                <div className="flex flex-col gap-0.5 mt-1">
-                    <div className="flex justify-between"><span>Oficial:</span> <span className="text-gray-300 font-bold">Bs {(basePrice * activeBcv).toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Paralelo:</span> <span className="text-gray-300 font-bold">Bs {(basePrice * activePar).toFixed(2)}</span></div>
-                </div>
-            ) : <div className="mt-1 text-gray-600 italic">Ingresa precio...</div>;
-
-            const infoPay = payAmount > 0 ? (
-                inputs.currency === 'Bs' ? (
-                    <div className="flex flex-col gap-0.5 mt-1">
-                        <div className="flex justify-between"><span>Si fuera BCV:</span> <span className="text-gray-300 font-bold">${(payAmount / activeBcv).toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Si fuera Par:</span> <span className="text-gray-300 font-bold">${(payAmount / activePar).toFixed(2)}</span></div>
-                    </div>
-                ) : (
-                    <div className="flex flex-col gap-0.5 mt-1">
-                        <div className="flex justify-between"><span>A tasa BCV:</span> <span className="text-gray-300 font-bold">Bs {(payAmount * activeBcv).toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>A tasa Par:</span> <span className="text-gray-300 font-bold">Bs {(payAmount * activePar).toFixed(2)}</span></div>
-                    </div>
-                )
-            ) : <div className="mt-1 text-gray-600 italic">Ingresa monto...</div>;
-
-            // Semáforo
-            let tasaImp = 0;
-            let status = { text: 'ESPERANDO', color: 'text-gray-500', bg: 'bg-gray-800' };
-            
-            if (basePrice > 0 && payAmount > 0) {
-                if (inputs.currency === 'Bs') {
-                    tasaImp = payAmount / basePrice;
-                } else {
-                    tasaImp = (payAmount / basePrice) * activeBcv; // Proyección en Bs
-                }
-
-                if (tasaImp <= activeBcv * 1.01) status = { text: 'EXCELENTE (OFICIAL)', color: 'text-green-400', bg: 'bg-green-900/30 border border-green-600' };
-                else if (tasaImp >= activePar * 0.99) status = { text: 'ALERTA: PARALELO', color: 'text-red-400', bg: 'bg-red-900/30 border border-red-600' };
-                else status = { text: 'TASA MIXTA / INFLADA', color: 'text-yellow-400', bg: 'bg-yellow-900/30 border border-yellow-600' };
+            // Cálculos para Textos Chiquitos (Micro-Info)
+            let infoBaseText = "Ingresa precio...";
+            if (basePrice > 0) {
+                infoBaseText = `Oficial: Bs ${(basePrice * activeBcv).toFixed(2)} | Par: Bs ${(basePrice * activeParalelo).toFixed(2)}`;
             }
 
+            let infoPayText = "Ingresa pago...";
+            if (payAmount > 0) {
+                if (inputs.currency === 'Bs') {
+                    // Me piden Bs
+                    const eqDolarBCV = (payAmount / activeBcv).toFixed(2);
+                    const eqDolarPar = (payAmount / activeParalelo).toFixed(2);
+                    infoPayText = `Equivale a: $${eqDolarPar} (Par) | $${eqDolarBCV} (BCV)`;
+                } else {
+                    // Me piden $
+                    const eqBsBCV = (payAmount * activeBcv).toFixed(2);
+                    const eqBsPar = (payAmount * activeParalelo).toFixed(2);
+                    infoPayText = `Son: Bs ${eqBsBCV} (BCV) | Bs ${eqBsPar} (Par)`;
+                }
+            }
+
+            // Cálculo Tasa Implícita y Semáforo
+            let tasaImplicita = 0;
+            let statusColor = 'text-gray-500';
+            let statusBg = 'bg-gray-800';
+            let statusText = 'ESPERANDO DATOS';
+            let analysisText = '';
+
+            if (basePrice > 0 && payAmount > 0) {
+                if (inputs.currency === 'Bs') {
+                    tasaImplicita = payAmount / basePrice;
+                } else {
+                    // Lógica calcu4: Si piden $ (para pagar en Bs a tasa X), convertimos lo que piden a Bs (usando BCV como referencia base legal) y dividimos por precio base
+                    // Ojo: Si te piden $12 por algo de $10, es sobreprecio puro.
+                    // Para mantener la consistencia con calcu4:
+                    const bsEstimados = payAmount * activeBcv; 
+                    tasaImplicita = bsEstimados / basePrice;
+                    // Corrección lógica simple: Si me piden $12 por algo de $10, el ratio es 1.2.
+                    // Multiplicamos por la tasa actual para ver la "Tasa Implícita en Bs".
+                    tasaImplicita = (payAmount / basePrice) * activeBcv; 
+                }
+
+                // Semáforo (Lógica calcu4)
+                if (tasaImplicita <= (activeBcv * 1.01)) {
+                    statusColor = 'text-green-400';
+                    statusBg = 'bg-green-900/30 border border-green-600';
+                    statusText = 'EXCELENTE (OFICIAL)';
+                    analysisText = 'Te están cobrando a tasa BCV real.';
+                } else if (tasaImplicita >= (activeParalelo * 0.98)) {
+                    statusColor = 'text-red-400';
+                    statusBg = 'bg-red-900/30 border border-red-600';
+                    statusText = 'ALERTA: TASA PARALELA';
+                    analysisText = 'Precio inflado a tasa paralela.';
+                } else {
+                    statusColor = 'text-yellow-400';
+                    statusBg = 'bg-yellow-900/30 border border-yellow-600';
+                    statusText = 'TASA MIXTA / INFLADA';
+                    analysisText = 'Es más caro que BCV, cuidado.';
+                }
+            }
+
+
+            // --- UTILS ---
+            const handleRateBlur = (field) => {
+                if (inputs[field] === '' || isNaN(parseFloat(inputs[field]))) {
+                    setInputs(prev => ({ ...prev, [field]: '' }));
+                }
+            };
+
             const saveLog = () => {
-                if(tasaImp > 0) {
-                    setLog([{id: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), rate: tasaImp.toFixed(2), status: status.text}, ...log]);
-                    alert("Guardado en log (historial oculto)"); // Feedback simple para ahorrar espacio UI
+                if (tasaImplicita > 0) {
+                    const newEntry = {
+                        id: Date.now(),
+                        date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                        price: inputs.priceDollar,
+                        paid: inputs.payAmount,
+                        currency: inputs.currency,
+                        rate: tasaImplicita.toFixed(2),
+                        status: statusText.includes('ALERTA') ? 'red' : statusText.includes('EXCELENTE') ? 'green' : 'yellow'
+                    };
+                    setLog([newEntry, ...log]);
+                    setShowHistory(true);
                 }
             };
 
-            // --- MOTORES DE CALCULADORA ---
-            const handleCalc = (val, setVal, disp, setDisp, wait, setWait, op, setOp, input) => {
-                if(typeof input === 'number' || input === '.') {
-                    if(wait) { setDisp(String(input)); setWait(false); }
-                    else setDisp(disp === '0' && input !== '.' ? String(input) : disp + input);
-                } else if (['+','-','*','/'].includes(input)) {
-                    const current = parseFloat(disp);
-                    if(val === null) setVal(current);
-                    else if(op) {
-                        const res = op === '+' ? val + current : op === '-' ? val - current : op === '*' ? val * current : val / current;
-                        setVal(res); setDisp(String(res));
-                    }
-                    setWait(true); setOp(input);
-                } else if (input === '=') {
-                    if(op && val !== null) {
-                        const current = parseFloat(disp);
-                        const res = op === '+' ? val + current : op === '-' ? val - current : op === '*' ? val * current : val / current;
-                        setVal(null); setOp(null); setDisp(String(res)); setWait(true);
-                    }
-                } else if (input === 'AC') {
-                    setDisp('0'); setVal(null); setOp(null); setWait(false);
+            // Lógica Calculadora Básica
+            const inputDigit = (d) => waitingForOperand ? (setCalcDisplay(String(d)), setWaitingForOperand(false)) : setCalcDisplay(calcDisplay === '0' ? String(d) : calcDisplay + d);
+            const performOperation = (op) => {
+                const inputValue = parseFloat(calcDisplay);
+                if (value === null) setValue(inputValue);
+                else if (operator) {
+                    const current = value || 0;
+                    const result = op === '+' ? current + inputValue : op === '-' ? current - inputValue : op === '*' ? current * inputValue : op === '/' ? current / inputValue : inputValue;
+                    setValue(result); setCalcDisplay(String(result));
                 }
+                setWaitingForOperand(true); setOperator(op);
             };
+            const clearCalc = () => { setCalcDisplay('0'); setValue(null); setOperator(null); setWaitingForOperand(false); };
 
-            // Wrapper para Calc Principal
-            const mainInput = (x) => handleCalc(mainVal, setMainVal, mainDisp, setMainDisp, mainWait, setMainWait, mainOp, setMainOp, x);
-            // Wrapper para Mini Calc
-            const miniInput = (x) => handleCalc(miniVal, setMiniVal, miniDisp, setMiniDisp, miniWait, setMiniWait, miniOp, setMiniOp, x);
+            // Componente Botón Calc
+            const CalcBtn = ({ l, type, onClick, d }) => {
+                let bg = type === 'o' ? COLORS.iosOrange : type === 't' ? COLORS.iosLightGray : COLORS.iosDarkGray;
+                let txt = type === 't' ? 'black' : 'white';
+                return <button onClick={onClick} className={`ios-btn ${d ? 'col-span-2 rounded-full' : 'rounded-full'} h-16 w-full flex items-center justify-center text-3xl font-medium`} style={{backgroundColor: bg, color: txt}}>{l}</button>;
+            };
 
             return (
                 <div className="scene">
                     <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
                         
-                        {/* === FRONT: MAIN CALCULATOR === */}
+                        {/* --- CARA FRONTAL: CALCULADORA --- */}
                         <div className="card-face bg-black text-white p-5 flex flex-col justify-end">
-                            <div className="flex-1 flex items-end justify-end px-2 mb-6"><span className="text-7xl font-light truncate">{mainDisp}</span></div>
-                            <div className="grid grid-cols-4 gap-3 mb-8">
-                                {['AC','+/-','%','/','7','8','9','*','4','5','6','-','1','2','3','+'].map(btn => (
-                                    <button key={btn} onClick={() => mainInput(btn)} className={`h-16 rounded-full text-2xl font-medium ios-btn ${['/','*','-','+'].includes(btn) ? 'bg-[#ff9f0a]' : ['AC','+/-','%'].includes(btn) ? 'bg-[#a5a5a5] text-black' : 'bg-[#333]'}`}>{btn}</button>
-                                ))}
-                                <button onClick={() => mainInput(0)} className="col-span-2 h-16 rounded-full bg-[#333] text-2xl font-medium ios-btn pl-6 text-left">0</button>
-                                <button onClick={() => mainInput('.')} className="h-16 rounded-full bg-[#333] text-2xl font-medium ios-btn">.</button>
-                                <button onClick={() => mainInput('=')} className="h-16 rounded-full bg-[#ff9f0a] text-2xl font-medium ios-btn">=</button>
+                            <div className="w-full h-32 flex items-end justify-end px-4 mb-4">
+                                <span className="text-7xl font-light tracking-tight truncate">{calcDisplay}</span>
+                            </div>
+                            <div className="w-full grid grid-cols-4 gap-3">
+                                <CalcBtn l="AC" type="t" onClick={clearCalc} />
+                                <CalcBtn l="+/-" type="t" onClick={()=>{}} />
+                                <CalcBtn l="%" type="t" onClick={()=>{}} />
+                                <CalcBtn l="÷" type="o" onClick={() => performOperation('/')} />
+                                <CalcBtn l="7" onClick={() => inputDigit(7)} />
+                                <CalcBtn l="8" onClick={() => inputDigit(8)} />
+                                <CalcBtn l="9" onClick={() => inputDigit(9)} />
+                                <CalcBtn l="×" type="o" onClick={() => performOperation('*')} />
+                                <CalcBtn l="4" onClick={() => inputDigit(4)} />
+                                <CalcBtn l="5" onClick={() => inputDigit(5)} />
+                                <CalcBtn l="6" onClick={() => inputDigit(6)} />
+                                <CalcBtn l="-" type="o" onClick={() => performOperation('-')} />
+                                <CalcBtn l="1" onClick={() => inputDigit(1)} />
+                                <CalcBtn l="2" onClick={() => inputDigit(2)} />
+                                <CalcBtn l="3" onClick={() => inputDigit(3)} />
+                                <CalcBtn l="+" type="o" onClick={() => performOperation('+')} />
+                                <CalcBtn l="0" d onClick={() => inputDigit(0)} />
+                                <CalcBtn l="," onClick={() => inputDigit('.')} />
+                                <CalcBtn l="=" type="o" onClick={() => performOperation('=')} />
                             </div>
                         </div>
 
-                        {/* === BACK: TOOL === */}
-                        <div className="card-face card-back text-white font-sans relative">
+                        {/* --- CARA TRASERA: HERRAMIENTA --- */}
+                        <div className="card-face card-back p-5 flex flex-col font-sans text-white">
                             
-                            {/* Header & Ticker */}
-                            <div className="pt-4 px-4 pb-2 bg-[#1a1a1a] border-b border-gray-800">
-                                <div className="flex justify-between items-center mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <h1 className="text-xl font-bold text-red-600">Calculadolar Pro</h1>
-                                        <button onClick={fetchRates} className={`text-gray-400 ${loading ? 'animate-spin' : ''}`}>⟳</button>
-                                    </div>
-                                    <button onClick={() => setIsFlipped(false)} className="text-gray-500 hover:text-white"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-                                </div>
-                                {/* Ticker */}
-                                <div className="flex gap-4 text-[10px] text-yellow-500 font-mono overflow-x-auto whitespace-nowrap scrollbar-hide">
-                                    <span className="ticker-item">€Oficial: {rates.euro.toFixed(2)}</span> •
-                                    <span className="ticker-item text-[#F0B90B]">
-                                        <svg width="12" height="12" viewBox="0 0 32 32" fill="currentColor"><path d="M16 0l6 6-6 6-6-6 6-6zM6 6l6 6-6 6-6-6 6-6zM26 6l6 6-6 6-6-6 6-6zM16 12l6 6-6 6-6-6 6-6zM6 18l6 6-6 6-6-6 6-6zM26 18l6 6-6 6-6-6 6-6zM16 24l6 6-6 6-6-6 6-6z"/></svg>
-                                        BIN: {rates.binance.toFixed(2)}
-                                    </span> •
-                                    <span className="ticker-item">$Prom: {rates.promedio.toFixed(2)}</span>
-                                </div>
+                            {/* Botón Salir */}
+                            <button onClick={() => setIsFlipped(false)} className="absolute top-5 right-5 p-2 rounded-full bg-gray-800 text-red-500 z-50 hover:bg-gray-700">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+
+                            {/* Header */}
+                            <div className="flex items-center gap-3 mt-2 mb-1">
+                                <h1 className="text-2xl font-bold text-red-600 tracking-tight">Calculadolar 🇻🇪</h1>
+                                <button onClick={fetchRates} className={`p-2 bg-gray-800 rounded-full text-gray-300 ${loading ? 'animate-spin' : ''}`}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                                </button>
                             </div>
 
-                            {/* Scrollable Content */}
-                            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-                                
-                                {/* Tasas Inputs */}
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="text-[10px] text-red-500 font-bold ml-1">Tasa BCV</label>
-                                        <input type="number" placeholder={rates.bcv} value={inputs.customBcv} onChange={e => setInputs({...inputs, customBcv: e.target.value})} className="w-full bg-[#222] border border-green-600 text-green-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-green-500" />
+                            {/* Ticker */}
+                            <div className="flex gap-4 text-xs font-mono text-yellow-500/90 mb-4 overflow-x-auto pb-2 border-b border-gray-800 whitespace-nowrap">
+                                <span>EUR: {rates.euro}</span> • <span>BIN: {rates.binance}</span> • <span>PROM: {rates.promedio}</span>
+                            </div>
+
+                            <div className="flex flex-col gap-4">
+                                {/* Fila 1: Tasas */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-green-500 font-bold ml-1">Tasa BCV</label>
+                                        <input type="number" placeholder={rates.bcv} value={inputs.customBcv} onChange={(e) => setInputs({...inputs, customBcv: e.target.value})} onBlur={() => handleRateBlur('customBcv')} className="w-full bg-[#1c1c1e] border border-green-600 text-green-500 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-green-500 text-xl font-bold placeholder-green-500/50 text-center" />
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] text-green-500 font-bold ml-1">Tasa Paralelo</label>
-                                        <input type="number" placeholder={rates.paralelo} value={inputs.customParalelo} onChange={e => setInputs({...inputs, customParalelo: e.target.value})} className="w-full bg-[#222] border border-green-600 text-green-500 p-2 rounded-lg text-lg font-bold text-center outline-none focus:ring-1 focus:ring-red-500" />
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-red-500 font-bold ml-1">Tasa Paralelo</label>
+                                        <input type="number" placeholder={rates.paralelo} value={inputs.customParalelo} onChange={(e) => setInputs({...inputs, customParalelo: e.target.value})} onBlur={() => handleRateBlur('customParalelo')} className="w-full bg-[#1c1c1e] border border-red-600 text-red-500 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-red-500 text-xl font-bold placeholder-red-500/50 text-center" />
                                     </div>
                                 </div>
 
-                                <div className="h-px bg-gray-800 my-1"></div>
+                                <hr className="border-gray-800" />
 
-                                {/* Precios Inputs */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-[10px] text-gray-400 uppercase font-bold ml-1">Precio Pagando en $</label>
-                                        <input type="number" placeholder="10" value={inputs.priceDollar} onChange={e => setInputs({...inputs, priceDollar: e.target.value})} className="w-full bg-[#2c2c2e] border border-gray-600 text-white p-2 rounded-lg text-lg text-center outline-none focus:border-white" />
-                                        <div className="text-[9px] text-gray-500 font-mono leading-tight px-1">{infoBase}</div>
+                                {/* Fila 2: Inputs Precios */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-gray-400 ml-1">Precio Marcado ($)</label>
+                                        <input type="number" placeholder="10" value={inputs.priceDollar} onChange={(e) => setInputs({...inputs, priceDollar: e.target.value})} className="w-full bg-[#2c2c2e] border border-gray-700 text-white p-3 rounded-xl focus:outline-none focus:border-gray-500 text-xl text-center" />
+                                        <div className="text-[9px] text-gray-500 font-mono leading-tight px-1">{infoBaseText}</div>
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] text-gray-400 uppercase font-bold ml-1">Precio Pagando en Bs</label>
-                                        <div className="flex h-[46px] bg-[#2c2c2e] border border-gray-600 rounded-lg overflow-hidden focus-within:border-white">
-                                            <select value={inputs.currency} onChange={e => setInputs({...inputs, currency: e.target.value})} className="bg-[#3a3a3c] text-white px-1 text-xs font-bold border-r border-gray-600 outline-none"><option value="Bs">Bs</option><option value="$">$</option></select>
-                                            <input type="number" placeholder="500" value={inputs.payAmount} onChange={e => setInputs({...inputs, payAmount: e.target.value})} className="w-full bg-transparent text-white p-1 text-lg text-center outline-none" />
+                                    
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-gray-400 ml-1">Me piden...</label>
+                                        <div className="flex h-[54px] bg-[#2c2c2e] border border-gray-700 rounded-xl overflow-hidden focus-within:border-gray-500">
+                                            <select value={inputs.currency} onChange={(e) => setInputs({...inputs, currency: e.target.value})} className="bg-[#3a3a3c] text-white px-2 text-sm font-bold border-r border-gray-600 outline-none appearance-none text-center min-w-[50px]">
+                                                <option value="Bs">Bs</option>
+                                                <option value="$">$</option>
+                                            </select>
+                                            <input type="number" placeholder="500" value={inputs.payAmount} onChange={(e) => setInputs({...inputs, payAmount: e.target.value})} className="w-full bg-transparent text-white p-2 text-xl text-center outline-none" />
                                         </div>
-                                        <div className="text-[9px] text-gray-500 font-mono leading-tight px-1">{infoPay}</div>
+                                        <div className="text-[9px] text-gray-500 font-mono leading-tight px-1">{infoPayText}</div>
                                     </div>
                                 </div>
 
-                                {/* Resultado Compacto */}
-                                <div className="flex gap-2 items-stretch h-20 mt-1">
-                                    <div className={`flex-1 rounded-xl border border-dashed border-gray-700 bg-gray-900/50 flex flex-col items-center justify-center relative p-1`}>
-                                        <span className="text-[9px] text-gray-500 uppercase tracking-wider">Tasa Implícita</span>
-                                        {tasaImp > 0 ? (
-                                            <>
-                                                <div className="text-2xl font-bold text-white leading-none">{tasaImp.toFixed(2)} <span className="text-[10px] text-gray-400 font-normal">Bs/$</span></div>
-                                                <div className={`text-[8px] px-1.5 py-0.5 rounded uppercase font-bold mt-1 ${status.color} ${status.bg}`}>{status.text}</div>
-                                            </>
-                                        ) : <span className="text-xl font-bold text-gray-700">--.--</span>}
-                                    </div>
-                                    <button onClick={saveLog} style={{backgroundColor: COLORS.vinotinto}} className="w-16 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-lg active:scale-95">
-                                        LOG
-                                    </button>
+                                {/* Resultado Semáforo */}
+                                <div className="mt-2 p-3 rounded-2xl border border-dashed border-gray-700 bg-gray-900/50 flex flex-col items-center justify-center min-h-[110px]">
+                                    <span className="text-xs text-gray-500 uppercase tracking-wider mb-1">Tasa Implícita</span>
+                                    {tasaImplicita > 0 ? (
+                                        <>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-4xl font-bold text-white">{tasaImplicita.toFixed(2)}</span>
+                                                <span className="text-sm text-gray-400">Bs/$</span>
+                                            </div>
+                                            <div className={`mt-2 text-[10px] px-2 py-1 rounded uppercase font-bold tracking-wide w-full text-center ${statusColor} ${statusBg}`}>
+                                                {statusText}
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 mt-1">{analysisText}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-3xl font-bold text-gray-700">--.--</span>
+                                            <div className="mt-2 text-[10px] px-2 py-1 rounded uppercase font-bold tracking-wide w-full text-center text-gray-500 bg-gray-800 border border-gray-700">ESPERANDO DATOS</div>
+                                        </>
+                                    )}
                                 </div>
 
-                                <div className="h-px bg-gray-800 my-1"></div>
-
-                                {/* MINI CALCULADORA (Abajo) */}
-                                <div className="bg-[#1c1c1e] rounded-2xl p-3 border border-gray-800 mt-auto">
-                                    <div className="text-right text-2xl font-light text-white mb-3 h-8 px-2">{miniDisp}</div>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {['AC','/','*','-'].map(b => <button key={b} onClick={()=>miniInput(b)} className="h-8 rounded-lg bg-[#333] text-sm text-white mini-btn">{b}</button>)}
-                                        {['7','8','9','+'].map(b => <button key={b} onClick={()=>miniInput(b)} className={`h-8 rounded-lg text-sm mini-btn ${b === '+' ? 'bg-[#ff9f0a] text-white' : 'bg-[#444] text-white'}`}>{b}</button>)}
-                                        {['4','5','6','='].map(b => <button key={b} onClick={()=>miniInput(b)} className={`h-8 rounded-lg text-sm mini-btn ${b === '=' ? 'bg-[#ff9f0a] text-white row-span-2 h-[72px]' : 'bg-[#444] text-white'}`} style={b==='='?{gridColumn:'4', gridRow:'3 / span 2'}:{}}>{b}</button>)}
-                                        {['1','2','3'].map(b => <button key={b} onClick={()=>miniInput(b)} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">{b}</button>)}
-                                        <button onClick={()=>miniInput(0)} className="h-8 col-span-2 rounded-lg bg-[#444] text-sm text-white mini-btn">0</button>
-                                        <button onClick={()=>miniInput('.')} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">.</button>
-                                    </div>
-                                </div>
-
+                                {/* Botón Guardar */}
+                                <button onClick={saveLog} className="w-full py-3 rounded-xl text-white font-bold shadow-lg active:scale-95 transition-transform" style={{ backgroundColor: COLORS.vinotinto }}>
+                                    Guardar en Log
+                                </button>
                             </div>
-                        </div>
 
+                            {/* Historial */}
+                            <div className="mt-auto pt-2">
+                                <button onClick={() => setShowHistory(!showHistory)} className="w-full flex items-center justify-between p-3 bg-[#1c1c1e] rounded-xl text-sm text-gray-400 hover:text-white transition-colors border border-gray-800">
+                                    <span>Historial / Log ({log.length})</span>
+                                    <span className={`transform transition-transform ${showHistory ? 'rotate-180' : ''}`}>▼</span>
+                                </button>
+                                
+                                <div className={`accordion-content ${showHistory ? 'open' : ''} bg-[#1c1c1e] mt-1 rounded-xl border border-gray-800 overflow-y-auto`}>
+                                    {log.length === 0 ? <div className="p-4 text-center text-xs text-gray-600">No hay registros aún</div> : (
+                                        log.map((item) => (
+                                            <div key={item.id} className="flex justify-between items-center p-3 border-b border-gray-800 last:border-0 text-xs">
+                                                <span className="text-gray-500">{item.date}</span>
+                                                <div className="flex gap-2">
+                                                    <span className="text-gray-300">${item.price}</span>
+                                                    <span className="text-gray-500">→</span>
+                                                    <span className="text-gray-300">{item.paid} {item.currency}</span>
+                                                </div>
+                                                <span className={`font-bold ${item.status === 'red' ? 'text-red-500' : item.status === 'green' ? 'text-green-500' : 'text-yellow-500'}`}>
+                                                    {item.rate}
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
             );
