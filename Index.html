@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comparadora de Precios Vzla</title>
+    <title>Calculadolar</title>
     <style>
         :root {
-            --bg-dark: #0a0a0a;
-            --card-bg: #141414;
+            --bg-dark: #000000;
+            --card-bg: #121212;
             --text-main: #ffffff;
-            --text-dim: #888;
             --vinotinto: #820000;
             --accent-green: #2ecc71;
             --accent-yellow: #f1c40f;
             --accent-red: #e74c3c;
-            --input-bg: #222;
+            --calc-btn: #333;
+            --calc-orange: #ff9f0a;
         }
 
         body {
-            background-color: var(--bg-dark);
+            background-color: #050505;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
             justify-content: center;
@@ -26,484 +26,446 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
-            -webkit-font-smoothing: antialiased; /* Mejora nitidez */
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* --- 3D ENGINE --- */
+        /* --- CONTENEDOR FLIP (2 CARAS) --- */
         .scene {
             width: 360px;
-            height: 700px;
-            perspective: 1200px;
-            position: relative;
+            height: 720px;
+            perspective: 1000px;
         }
 
-        .carousel {
+        .card {
             width: 100%;
             height: 100%;
-            position: absolute;
+            position: relative;
+            transition: transform 0.6s;
             transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
         }
 
         .face {
             position: absolute;
             width: 100%;
             height: 100%;
-            border-radius: 24px;
-            background: var(--card-bg);
-            border: 1px solid #333;
+            backface-visibility: hidden;
+            border-radius: 30px;
             overflow: hidden;
-            backface-visibility: hidden; /* Clave para evitar blurry */
-            display: flex;
-            flex-direction: column;
-            /* La opacidad del texto mejora al no tener sombras complejas */
+            background: var(--card-bg);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        /* Posiciones del Prisma (Triángulo) */
-        .face-1 { transform: rotateY(0deg) translateZ(105px); z-index: 3; }
-        .face-2 { transform: rotateY(120deg) translateZ(105px); z-index: 2; }
-        .face-3 { transform: rotateY(240deg) translateZ(105px); z-index: 1; }
+        .face-front { background: #000; } /* Calculadora Camuflaje */
+        .face-back { transform: rotateY(180deg); display: flex; flex-direction: column; } /* Herramienta */
 
-        /* --- COMPONENTES COMUNES --- */
+        /* --- CARA 1: CAMUFLAJE (iOS Calc) --- */
+        .calc-ios { padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box; }
+        .screen-ios { color: white; font-size: 80px; text-align: right; margin-bottom: 20px; font-weight: 300; }
+        .keypad-ios { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .btn-ios { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 30px; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .bg-grey { background: #333; }
+        .bg-light { background: #a5a5a5; color: black; }
+        .bg-orange { background: var(--calc-orange); }
+        .zero-ios { grid-column: span 2; width: 100%; border-radius: 40px; justify-content: flex-start; padding-left: 25px; }
+
+        .secret-btn {
+            position: absolute; top: 20px; left: 20px; font-size: 20px; background: none; border: none; cursor: pointer; opacity: 0.5;
+        }
+
+        /* --- CARA 2: CALCULADOLAR REAL --- */
         .header {
             padding: 15px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
             border-bottom: 1px solid #333;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .top-bar h2 { margin: 0; color: var(--vinotinto); font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+        .flip-back-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; }
+
+        /* Scroll horizontal de Tasas de Referencia */
+        .ref-rates-container {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(to bottom, #1a1a1a, #141414);
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            scrollbar-width: none; /* Firefox */
         }
-        .header h2 { margin: 0; font-size: 16px; color: var(--vinotinto); letter-spacing: 0.5px; text-transform: uppercase; font-weight: 800; }
-        
-        .content { padding: 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .ref-rates-container::-webkit-scrollbar { display: none; }
 
-        /* --- INPUTS Y GRID --- */
-        .row-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
-        
-        .dual-grid { display: flex; gap: 10px; }
-        .input-wrapper { flex: 1; display: flex; flex-direction: column; }
-        
-        .input-box {
-            display: flex;
-            background: var(--input-bg);
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 2px;
-            align-items: center;
+        .ref-pill {
+            background: #222; border: 1px solid #333; border-radius: 6px;
+            padding: 4px 8px; min-width: 70px; display: flex; flex-direction: column; align-items: center;
         }
-        
-        .input-box input {
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 8px;
-            width: 100%;
-            font-size: 16px;
-            font-family: monospace;
-            text-align: right;
-            outline: none;
+        .ref-label { font-size: 9px; color: #888; text-transform: uppercase; }
+        .ref-val { 
+            background: transparent; border: none; color: var(--accent-yellow); 
+            font-size: 11px; font-weight: bold; width: 50px; text-align: center; font-family: monospace;
         }
 
-        .currency-select {
-            background: #333;
-            color: white;
-            border: none;
-            font-size: 12px;
-            padding: 5px;
-            border-radius: 4px;
-            margin-right: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+        .main-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
 
-        /* --- TEXTOS CHIQUITOS (CONVERSIONES) --- */
-        .micro-text {
-            font-size: 9px;
-            color: #666;
-            margin-top: 4px;
-            line-height: 1.3;
-            font-family: monospace;
-        }
-        .micro-val { color: #aaa; }
-
-        /* --- RESULTADOS --- */
-        .result-panel {
-            background: #1a1a1a;
-            border-radius: 10px;
-            padding: 12px;
-            border: 1px solid #333;
-            margin-top: 10px;
+        /* Comparadora Styles */
+        .comparison-box {
+            background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px;
         }
         
-        .tasa-implicita-display {
-            text-align: center;
-            font-size: 28px;
-            font-weight: 800;
-            margin: 10px 0;
-            font-family: monospace;
+        .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .input-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .input-label { font-size: 11px; color: #aaa; }
+        
+        .input-wrapper {
+            display: flex; align-items: center; background: #252525; border-radius: 8px; padding: 2px 8px; border: 1px solid #444;
         }
-
-        .status-badge {
-            text-align: center;
-            font-size: 12px;
-            font-weight: bold;
-            padding: 4px;
-            border-radius: 4px;
-            margin-top: 5px;
-            text-transform: uppercase;
+        .input-field {
+            background: transparent; border: none; color: white; font-size: 18px; width: 100%; text-align: right; padding: 8px 0; outline: none; font-weight: bold;
         }
-
-        /* Colores de estado */
-        .status-green { color: var(--accent-green); border: 1px solid var(--accent-green); background: rgba(46, 204, 113, 0.1); }
-        .status-yellow { color: var(--accent-yellow); border: 1px solid var(--accent-yellow); background: rgba(241, 196, 15, 0.1); }
-        .status-red { color: var(--accent-red); border: 1px solid var(--accent-red); background: rgba(231, 76, 60, 0.1); }
-
-        /* --- BOTONES --- */
-        .nav-btn {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 100;
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(5px);
+        .input-select {
+            background: #333; color: white; border: none; font-size: 12px; padding: 4px; border-radius: 4px; margin-right: 5px;
         }
+        
+        .micro-convert { font-size: 10px; color: #666; margin-top: 2px; text-align: right; font-family: monospace; line-height: 1.2; }
+        .mc-val { color: #ccc; }
 
-        .action-btn {
-            background: var(--vinotinto);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-        .btn-refresh {
-            background: transparent; border: none; color: var(--accent-green); cursor: pointer; font-size: 18px;
-        }
+        /* Semáforo */
+        .semaphore { margin-top: 10px; text-align: center; padding: 10px; border-radius: 8px; background: #111; border: 1px dashed #333; }
+        .sem-title { font-size: 10px; color: #888; text-transform: uppercase; }
+        .sem-rate { font-size: 24px; font-weight: 800; color: white; margin: 5px 0; font-family: monospace; }
+        .sem-status { font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 4px; display: inline-block; }
 
-        /* --- LOG --- */
-        .log-list { font-size: 10px; font-family: monospace; color: #ccc; }
-        .log-item { padding: 8px 0; border-bottom: 1px solid #333; }
-        .log-highlight { color: var(--accent-yellow); }
+        /* Colapsables (Log y Calculadora Real) */
+        .collapsible { margin-top: 10px; border: 1px solid #333; border-radius: 8px; overflow: hidden; background: #1a1a1a; }
+        .coll-header {
+            padding: 10px; background: #222; color: #ccc; font-size: 12px; font-weight: bold;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+        }
+        .coll-content { display: none; padding: 10px; border-top: 1px solid #333; }
+        .coll-content.open { display: block; }
+
+        /* Calculadora Compacta Real */
+        .mini-calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .btn-mini { padding: 10px; background: #333; border: none; color: white; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-mini:active { background: #444; }
+        .btn-mini.op { background: var(--vinotinto); }
+        .mini-screen { grid-column: span 4; background: #000; color: var(--accent-green); text-align: right; padding: 8px; font-family: monospace; margin-bottom: 5px; border-radius: 4px; }
+
+        /* Log */
+        .log-item { font-size: 10px; border-bottom: 1px solid #333; padding: 6px 0; color: #aaa; font-family: monospace; }
+        .log-hl { color: white; font-weight: bold; }
+
+        .save-btn { width: 100%; background: var(--vinotinto); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; margin-top: 5px; font-size: 12px; font-weight: bold; }
 
     </style>
 </head>
 <body>
 
 <div class="scene">
-    <div class="carousel" id="carousel">
+    <div class="card" id="card">
         
-        <div class="face face-1">
-            <div class="header">
-                <h2>Comparadora Vzla</h2>
-                <button class="btn-refresh" onclick="buscarTasasAPI()" id="refreshBtn">⟳</button>
+        <div class="face face-front">
+            <button class="secret-btn" onclick="flipCard()">⚙️</button>
+            
+            <div class="calc-ios">
+                <div class="screen-ios" id="ios-screen">0</div>
+                <div class="keypad-ios">
+                    <button class="btn-ios bg-light" onclick="clearIos()">AC</button>
+                    <button class="btn-ios bg-light">±</button>
+                    <button class="btn-ios bg-light">%</button>
+                    <button class="btn-ios bg-orange" onclick="appendIos('/')">÷</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('7')">7</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('8')">8</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('9')">9</button>
+                    <button class="btn-ios bg-orange" onclick="appendIos('*')">×</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('4')">4</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('5')">5</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('6')">6</button>
+                    <button class="btn-ios bg-orange" onclick="appendIos('-')">-</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('1')">1</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('2')">2</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('3')">3</button>
+                    <button class="btn-ios bg-orange" onclick="appendIos('+')">+</button>
+                    <button class="btn-ios bg-grey zero-ios" onclick="appendIos('0')">0</button>
+                    <button class="btn-ios bg-grey" onclick="appendIos('.')">.</button>
+                    <button class="btn-ios bg-orange" onclick="calcIos()">=</button>
+                </div>
             </div>
-            <div class="content">
+        </div>
+
+        <div class="face face-back">
+            
+            <div class="header">
+                <div class="top-bar">
+                    <h2>Calculadolar</h2>
+                    <button class="flip-back-btn" onclick="flipCard()">↻</button>
+                </div>
                 
-                <div class="dual-grid">
-                    <div class="input-wrapper">
-                        <span class="row-label">Tasa BCV (Oficial)</span>
-                        <div class="input-box">
-                            <input type="number" id="tasaBCV" placeholder="0.00" oninput="recalcularTodo()">
+                <div class="ref-rates-container">
+                    <div class="ref-pill"><span class="ref-label">BCV</span><input class="ref-val" id="ref-bcv" value="0.00" oninput="calcTool()"></div>
+                    <div class="ref-pill"><span class="ref-label">Paralelo</span><input class="ref-val" id="ref-par" value="0.00" oninput="calcTool()"></div>
+                    <div class="ref-pill"><span class="ref-label">Euro</span><input class="ref-val" id="ref-eur" value="0.00"></div>
+                    <div class="ref-pill"><span class="ref-label">Binance</span><input class="ref-val" id="ref-bin" value="0.00"></div>
+                    <div class="ref-pill"><span class="ref-label">Promedio</span><input class="ref-val" id="ref-avg" readonly></div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                
+                <div class="comparison-box">
+                    <div class="input-row">
+                        <div class="input-group" style="margin-right:10px;">
+                            <span class="input-label">Precio Marcado ($)</span>
+                            <div class="input-wrapper">
+                                <input type="number" class="input-field" id="price-base" placeholder="10" oninput="calcTool()">
+                            </div>
+                            <div class="micro-convert" id="micro-base">...</div>
+                        </div>
+
+                        <div class="input-group">
+                            <span class="input-label">Me piden...</span>
+                            <div class="input-wrapper">
+                                <select class="input-select" id="currency-ask" onchange="calcTool()">
+                                    <option value="bs">Bs</option>
+                                    <option value="usd">$</option>
+                                </select>
+                                <input type="number" class="input-field" id="price-ask" placeholder="500" oninput="calcTool()">
+                            </div>
+                            <div class="micro-convert" id="micro-ask">...</div>
                         </div>
                     </div>
-                    <div class="input-wrapper">
-                        <span class="row-label">Tasa Paralela</span>
-                        <div class="input-box">
-                            <input type="number" id="tasaPar" placeholder="0.00" oninput="recalcularTodo()">
+
+                    <div class="semaphore">
+                        <div class="sem-title">Tasa Implícita de Pago</div>
+                        <div class="sem-rate" id="res-rate">--</div>
+                        <span class="sem-status" id="res-status" style="background:#333; color:#666">Esperando</span>
+                    </div>
+
+                    <button class="save-btn" onclick="addLog()">Guardar en Log</button>
+                </div>
+
+                <div class="collapsible">
+                    <div class="coll-header" onclick="toggleCollapsible('calc-real')">
+                        <span>Calculadora Real</span> <span>▼</span>
+                    </div>
+                    <div class="coll-content" id="calc-real">
+                        <div class="mini-screen" id="mini-screen">0</div>
+                        <div class="mini-calc-grid">
+                            <button class="btn-mini" onclick="miniApp('7')">7</button>
+                            <button class="btn-mini" onclick="miniApp('8')">8</button>
+                            <button class="btn-mini" onclick="miniApp('9')">9</button>
+                            <button class="btn-mini op" onclick="miniApp('/')">÷</button>
+                            <button class="btn-mini" onclick="miniApp('4')">4</button>
+                            <button class="btn-mini" onclick="miniApp('5')">5</button>
+                            <button class="btn-mini" onclick="miniApp('6')">6</button>
+                            <button class="btn-mini op" onclick="miniApp('*')">×</button>
+                            <button class="btn-mini" onclick="miniApp('1')">1</button>
+                            <button class="btn-mini" onclick="miniApp('2')">2</button>
+                            <button class="btn-mini" onclick="miniApp('3')">3</button>
+                            <button class="btn-mini op" onclick="miniApp('-')">-</button>
+                            <button class="btn-mini" onclick="miniApp('C')">C</button>
+                            <button class="btn-mini" onclick="miniApp('0')">0</button>
+                            <button class="btn-mini" onclick="miniApp('.')">.</button>
+                            <button class="btn-mini op" onclick="miniExec()">=</button>
                         </div>
                     </div>
                 </div>
 
-                <hr style="border: 0; border-top: 1px solid #333; margin: 5px 0; width: 100%;">
-
-                <div class="dual-grid">
-                    
-                    <div class="input-wrapper">
-                        <span class="row-label">Precio Marcado ($)</span>
-                        <div class="input-box">
-                            <input type="number" id="precioBase" placeholder="10" oninput="recalcularTodo()">
-                        </div>
-                        <div class="micro-text" id="infoBase">
-                            Ingresa precio...
-                        </div>
+                <div class="collapsible">
+                    <div class="coll-header" onclick="toggleCollapsible('log-real')">
+                        <span>Historial / Log</span> <span>▼</span>
                     </div>
-
-                    <div class="input-wrapper">
-                        <span class="row-label">Me piden...</span>
-                        <div class="input-box">
-                            <select class="currency-select" id="monedaPago" onchange="recalcularTodo()">
-                                <option value="bs">Bs</option>
-                                <option value="$">$</option>
-                            </select>
-                            <input type="number" id="precioPiden" placeholder="500" oninput="recalcularTodo()">
-                        </div>
-                        <div class="micro-text" id="infoPiden">
-                            Ingresa monto...
-                        </div>
+                    <div class="coll-content" id="log-real">
+                        <div id="log-list"></div>
+                        <button class="save-btn" style="background:#444; margin-top:10px;" onclick="document.getElementById('log-list').innerHTML=''">Borrar Todo</button>
                     </div>
-
                 </div>
-
-                <div class="result-panel">
-                    <span class="row-label" style="text-align: center;">TASA IMPLÍCITA QUE ESTÁS PAGANDO</span>
-                    <div class="tasa-implicita-display" id="tasaImplicita">--</div>
-                    <div class="status-badge" id="statusBadge">Esperando datos</div>
-                    
-                    <div style="margin-top:10px; font-size:11px; color:#aaa; text-align: center;" id="analisisTexto">
-                        </div>
-                </div>
-
-                <button class="action-btn" onclick="guardarSnapshot()">📸 Guardar en Log</button>
 
             </div>
         </div>
-
-
-        <div class="face face-2">
-            <div class="header">
-                <h2>Historial</h2>
-                <button class="btn-refresh" onclick="borrarLog()">🗑️</button>
-            </div>
-            <div class="content">
-                <div class="log-list" id="logContainer">
-                    <div style="text-align:center; padding:20px; color:#555">No hay registros aún</div>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="face face-3">
-             <div style="display:flex; height:100%; justify-content:center; align-items:center; color:#333; flex-direction: column;">
-                 <h1 style="font-size: 80px; font-weight: 300; color:white;">0</h1>
-                 <p>Modo Camuflaje</p>
-             </div>
-        </div>
-
     </div>
-    
-    <button class="nav-btn" onclick="rotar()">↻</button>
 </div>
 
 <script>
-    /* --- 1. CONFIGURACIÓN Y VARIABLES --- */
-    let angulo = 0;
-    const carousel = document.getElementById('carousel');
-    
-    // Elementos DOM
-    const elBCV = document.getElementById('tasaBCV');
-    const elPar = document.getElementById('tasaPar');
-    const elBase = document.getElementById('precioBase');
-    const elPiden = document.getElementById('precioPiden');
-    const elMoneda = document.getElementById('monedaPago');
-    const elImplicita = document.getElementById('tasaImplicita');
-    const elBadge = document.getElementById('statusBadge');
-    
-    // Textos Chiquiticos
-    const infoBase = document.getElementById('infoBase');
-    const infoPiden = document.getElementById('infoPiden');
-
-    /* --- 2. SISTEMA DE ROTACIÓN 3D --- */
-    function rotar() {
-        angulo -= 120;
-        carousel.style.transform = `rotateY(${angulo}deg)`;
+    /* --- 1. FLIP & NAVIGATION --- */
+    const card = document.getElementById('card');
+    function flipCard() {
+        card.classList.toggle('is-flipped');
     }
 
-    /* --- 3. LÓGICA DE MULTI-API (FALLBACK SYSTEM) --- */
-    // Simulación de búsqueda en varias fuentes
-    async function buscarTasasAPI() {
-        const btn = document.getElementById('refreshBtn');
-        btn.innerText = '...';
+    function toggleCollapsible(id) {
+        document.getElementById(id).classList.toggle('open');
+    }
+
+    /* --- 2. CAMUFLAJE IOS CALC --- */
+    let iosExp = '';
+    const iosScreen = document.getElementById('ios-screen');
+    function appendIos(v) { 
+        if(iosScreen.innerText==='0' && v!=='.') iosExp=''; 
+        iosExp+=v; iosScreen.innerText=iosExp.replace('*','×').replace('/','÷'); 
+    }
+    function clearIos() { iosExp=''; iosScreen.innerText='0'; }
+    function calcIos() { try{ iosScreen.innerText=eval(iosExp)||0; iosExp=iosScreen.innerText; }catch{ iosScreen.innerText='Error';} }
+
+    /* --- 3. FETCH TASAS (MULTIPLE API) --- */
+    async function fetchRates() {
+        // Valores por defecto (Placeholders)
+        let rates = { bcv: 0, par: 0, eur: 0, bin: 0 };
         
-        // Array de "Fuentes" simuladas para la estructura. 
-        // En producción real pondrías URLs reales aquí.
-        const fuentes = [
-            { nombre: "DolarApi", url: "https://ve.dolarapi.com/v1/dolares" }, // Ejemplo
-            { nombre: "PyDolar", url: "https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=monitor" }
-        ];
-
-        let bcvEncontrado = 0;
-        let parEncontrado = 0;
-
         try {
-            // Intento 1: DolarApi (Suele ser estable)
-            const res = await fetch('https://ve.dolarapi.com/v1/dolares');
+            // Intentar PyDolarVenezuela (Suele tener todo)
+            const res = await fetch('https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=monitor');
             if(res.ok) {
                 const data = await res.json();
-                // Buscar BCV
-                const oficial = data.find(d => d.fuente === 'oficial');
-                if(oficial) bcvEncontrado = oficial.promedio;
-                
-                // Buscar Paralelo
-                const paralelo = data.find(d => d.fuente === 'paralelo'); 
-                if(paralelo) parEncontrado = paralelo.promedio;
+                // Ajustar segun estructura de API. Esta estructura cambia mucho, 
+                // aqui hago un "best guess" seguro.
+                // Si la API cambia, el usuario puede editar manualmente.
+                if(data.monitors) {
+                    rates.bcv = parseFloat(data.monitors.bcv?.price || 0);
+                    rates.par = parseFloat(data.monitors.enparalelovzla?.price || 0);
+                    rates.eur = parseFloat(data.monitors.euro_bcv?.price || 0);
+                    rates.bin = parseFloat(data.monitors.binance?.price || 0);
+                }
             }
-        } catch (e) {
-            console.log("Fallo API 1, intentando siguiente...");
-        }
+        } catch(e) { console.log('Error fetch, usando manual'); }
 
-        // Si falló la API, ponemos valores manuales (o intentariamos la API 2, 3...)
-        // Aquí dejo valores "dummy" para que veas que funciona si no hay internet
-        if(!bcvEncontrado) bcvEncontrado = 45.50; // Valor ejemplo
-        if(!parEncontrado) parEncontrado = 53.20; // Valor ejemplo
+        // Si falló fetch, poner valores manuales de ejemplo o dejar en 0
+        if(rates.bcv === 0) rates.bcv = 46.20; 
+        if(rates.par === 0) rates.par = 54.50; 
 
-        elBCV.value = bcvEncontrado.toFixed(2);
-        elPar.value = parEncontrado.toFixed(2);
+        // Llenar inputs
+        document.getElementById('ref-bcv').value = rates.bcv.toFixed(2);
+        document.getElementById('ref-par').value = rates.par.toFixed(2);
+        document.getElementById('ref-eur').value = rates.eur.toFixed(2);
+        document.getElementById('ref-bin').value = rates.bin.toFixed(2);
         
-        btn.innerText = '⟳';
-        recalcularTodo();
+        calcTool(); // Recalcular todo
     }
 
-    /* --- 4. CORAZÓN DEL CÁLCULO (LA INGENIERÍA INVERSA) --- */
-    function recalcularTodo() {
-        const bcv = parseFloat(elBCV.value) || 0;
-        const par = parseFloat(elPar.value) || 0;
-        const baseUSD = parseFloat(elBase.value) || 0;
-        const pidenVal = parseFloat(elPiden.value) || 0;
-        const pidenMoneda = elMoneda.value; // 'bs' o '$'
+    /* --- 4. CALCULADOLAR ENGINE (INGENIERIA INVERSA) --- */
+    function calcTool() {
+        // Obtener tasas
+        const bcv = parseFloat(document.getElementById('ref-bcv').value) || 0;
+        const par = parseFloat(document.getElementById('ref-par').value) || 0;
+        
+        // Calcular promedio simple
+        const avg = ((bcv + par) / 2).toFixed(2);
+        document.getElementById('ref-avg').value = avg;
 
-        // 1. Actualizar textos chiquiticos lado izquierdo (Base)
-        if(baseUSD > 0 && bcv > 0) {
-            infoBase.innerHTML = `
-                Oficial: <span class="micro-val">Bs ${(baseUSD * bcv).toFixed(2)}</span><br>
-                Paralelo: <span class="micro-val">Bs ${(baseUSD * par).toFixed(2)}</span>
+        // Obtener Inputs Usuario
+        const base = parseFloat(document.getElementById('price-base').value) || 0;
+        const ask = parseFloat(document.getElementById('price-ask').value) || 0;
+        const currency = document.getElementById('currency-ask').value;
+
+        // A. Conversiones Pequeñas (Izquierda: Base)
+        const mb = document.getElementById('micro-base');
+        if(base > 0 && bcv > 0) {
+            mb.innerHTML = `
+                Oficial: <span class="mc-val">Bs ${(base*bcv).toFixed(2)}</span><br>
+                Paralelo: <span class="mc-val">Bs ${(base*par).toFixed(2)}</span>
             `;
-        } else {
-            infoBase.innerHTML = "Ingresa monto...";
-        }
+        } else { mb.innerHTML = '...'; }
 
-        // 2. Actualizar textos chiquiticos lado derecho (Piden)
-        let montoEnBolivaresReales = 0;
-
-        if (pidenVal > 0) {
-            if (pidenMoneda === 'bs') {
-                // Caso B: Me piden 5400 Bs
-                montoEnBolivaresReales = pidenVal;
-                // Mostrar cuánto es en Dólares reales
-                const segunBCV = (pidenVal / bcv).toFixed(2);
-                const segunPar = (pidenVal / par).toFixed(2);
-                infoPiden.innerHTML = `
-                    Equivale a: <b>$${segunPar}</b> (Par)<br>
-                    Si fuera oficial: <b>$${segunBCV}</b>
+        // B. Conversiones Pequeñas (Derecha: Piden)
+        const ma = document.getElementById('micro-ask');
+        if(ask > 0) {
+            if(currency === 'bs') {
+                ma.innerHTML = `
+                   Son: <span class="mc-val">$${(ask/par).toFixed(2)}</span> (Par)<br>
+                   Son: <span class="mc-val">$${(ask/bcv).toFixed(2)}</span> (BCV)
                 `;
             } else {
-                // Caso A o C: Me piden $15 (pero pagaderos en Bs a alguna tasa)
-                // Asumimos que si te piden dolares para pagar en Bs, usan la tasa que declararon arriba (BCV usualmente dicen)
-                // Pero aquí la trampa es el precio base vs el precio pedido.
-                
-                // Calculo Bs estimados si fuera legal
-                const bsEstimados = pidenVal * bcv;
-                montoEnBolivaresReales = bsEstimados; 
-                
-                infoPiden.innerHTML = `
-                    Son: <span class="micro-val">Bs ${(pidenVal * bcv).toFixed(2)}</span> (al BCV)<br>
-                    Son: <span class="micro-val">Bs ${(pidenVal * par).toFixed(2)}</span> (al Par)
+                ma.innerHTML = `
+                   Son: <span class="mc-val">Bs ${(ask*bcv).toFixed(2)}</span> (BCV)<br>
+                   Son: <span class="mc-val">Bs ${(ask*par).toFixed(2)}</span> (Par)
                 `;
             }
-        } else {
-            infoPiden.innerHTML = "Ingresa lo que piden...";
-        }
+        } else { ma.innerHTML = '...'; }
 
-        // 3. CALCULO DE TASA IMPLÍCITA (SEMÁFORO)
-        if (baseUSD > 0 && pidenVal > 0 && bcv > 0) {
-            let tasaCalculada = 0;
-
-            if (pidenMoneda === 'bs') {
-                // Si me piden Bs, divido entre el precio BASE en Dolares para saber a cuanto me cobran el $
-                tasaCalculada = pidenVal / baseUSD;
+        // C. Semáforo y Tasa Implícita
+        const resRate = document.getElementById('res-rate');
+        const resStatus = document.getElementById('res-status');
+        
+        if(base > 0 && ask > 0 && bcv > 0) {
+            let implicitRate = 0;
+            
+            if(currency === 'bs') {
+                // Me piden Bs. Divido Bs entre el precio Base ($)
+                implicitRate = ask / base;
             } else {
-                // Si me piden Dolares (Ej: Base $10, Piden $15 pagando en Bs a BCV)
-                // Tengo que convertir lo que piden a Bs usando la tasa oficial (que es la excusa)
-                // Y dividir entre el precio base.
-                const bsQueVoyAPagar = pidenVal * bcv; 
-                tasaCalculada = bsQueVoyAPagar / baseUSD;
+                // Me piden USD (ej: Base $10, Piden $15 pagando en Bs al oficial)
+                // Convertimos el Piden a Bs (usando BCV como referencia teórica)
+                const bsTheoretical = ask * bcv;
+                implicitRate = bsTheoretical / base;
             }
 
-            elImplicita.innerText = tasaCalculada.toFixed(2) + " Bs/$";
+            resRate.innerText = implicitRate.toFixed(2) + " Bs/$";
 
-            // Lógica de Semáforo
-            const diffBCV = Math.abs(tasaCalculada - bcv);
-            const diffPar = Math.abs(tasaCalculada - par);
-
-            elBadge.className = 'status-badge';
-            const analisis = document.getElementById('analisisTexto');
-
-            if (tasaCalculada <= (bcv * 1.01)) { // Margen de error 1%
-                // VERDE: Precio justo (BCV)
-                elBadge.classList.add('status-green');
-                elBadge.innerText = "EXCELENTE (OFICIAL)";
-                analisis.innerText = "Te están cobrando a tasa BCV real.";
-            } else if (tasaCalculada >= (par * 0.98)) {
-                // ROJO: Precio Paralelo o más
-                elBadge.classList.add('status-red');
-                elBadge.innerText = "ALERTA: TASA PARALELA";
-                analisis.innerText = "Te inflaron el precio para cobrarte a paralelo.";
+            // Lógica Semáforo
+            resStatus.style.color = "white";
+            if(implicitRate <= bcv * 1.01) { // 1% margen
+                resStatus.style.background = "#27ae60"; 
+                resStatus.innerText = "OFICIAL / CORRECTO";
+            } else if (implicitRate >= par * 0.99) {
+                resStatus.style.background = "#c0392b";
+                resStatus.innerText = "ALERTA: PARALELO";
             } else {
-                // AMARILLO: Ni chicha ni limonada
-                elBadge.classList.add('status-yellow');
-                elBadge.innerText = "TASA MIXTA / INFLADA";
-                analisis.innerText = "Es más caro que BCV, ten cuidado.";
+                resStatus.style.background = "#f39c12";
+                resStatus.innerText = "MIXTO / SOBREPRECIO";
             }
 
         } else {
-            elImplicita.innerText = "--";
-            elBadge.className = 'status-badge';
-            elBadge.innerText = "Esperando datos";
-            document.getElementById('analisisTexto').innerText = "";
+            resRate.innerText = "--";
+            resStatus.style.background = "#333";
+            resStatus.innerText = "Esperando";
         }
     }
 
-    /* --- 5. LOG DE SNAPSHOTS --- */
-    function guardarSnapshot() {
-        const base = elBase.value;
-        const piden = elPiden.value;
-        const moneda = elMoneda.value;
-        const tasaImp = elImplicita.innerText;
-        const status = elBadge.innerText;
+    /* --- 5. LOG SYSTEM --- */
+    function addLog() {
+        const base = document.getElementById('price-base').value;
+        const ask = document.getElementById('price-ask').value;
+        const cur = document.getElementById('currency-ask').value.toUpperCase();
+        const rate = document.getElementById('res-rate').innerText;
+        const stat = document.getElementById('res-status').innerText;
         
-        if(!base || !piden) return;
+        if(!base || !ask) return;
 
         const time = new Date().toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'});
-        
-        const item = document.createElement('div');
-        item.className = 'log-item';
-        
-        // Formato Log
-        item.innerHTML = `
-            <div style="display:flex; justify-content:space-between; color:white;">
-                <span>${time}</span>
-                <span class="log-highlight">${tasaImp}</span>
-            </div>
-            <div>Ref: $${base} | Piden: ${piden} ${moneda.toUpperCase()}</div>
-            <div style="font-size:9px; margin-top:2px; color:${status.includes('ALERTA') ? '#e74c3c' : '#2ecc71'}">${status}</div>
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.innerHTML = `
+            <span style="color:#666">[${time}]</span> 
+            Base $${base} vs Piden ${ask}${cur} <br>
+            Tasa: <span class="log-hl">${rate}</span> (${stat})
         `;
-
-        const container = document.getElementById('logContainer');
-        // Quitar mensaje de "vacio" si existe
-        if(container.children[0] && container.children[0].innerText.includes('No hay')) {
-            container.innerHTML = '';
-        }
-        container.prepend(item);
+        const list = document.getElementById('log-list');
+        list.insertBefore(div, list.firstChild);
+        
+        // Auto abrir log
+        document.getElementById('log-real').classList.add('open');
     }
 
-    function borrarLog() {
-        document.getElementById('logContainer').innerHTML = '<div style="text-align:center; padding:20px; color:#555">No hay registros aún</div>';
+    /* --- 6. MINI CALCULADORA REAL --- */
+    let miniExp = '';
+    const miniScreen = document.getElementById('mini-screen');
+    function miniApp(v) {
+        if(v === 'C') { miniExp = ''; miniScreen.innerText = '0'; return; }
+        if(miniScreen.innerText === '0' && v !== '.') miniExp = '';
+        miniExp += v;
+        miniScreen.innerText = miniExp;
+    }
+    function miniExec() {
+        try { miniScreen.innerText = eval(miniExp); miniExp = miniScreen.innerText; }
+        catch { miniScreen.innerText = 'Err'; }
     }
 
-    // Inicio
-    buscarTasasAPI();
+    // Init
+    fetchRates();
 
 </script>
-
 </body>
 </html>
