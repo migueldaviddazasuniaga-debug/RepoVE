@@ -290,4 +290,103 @@
                                     </div>
                                 </div>
 
-                                <div className="h-
+                                <div className="h-px bg-gray-800 my-1"></div>
+
+                                {/* Inputs de Precios */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] text-gray-400 uppercase font-bold ml-1">Precio Pagando en $</label>
+                                        <input type="number" placeholder="10" value={inputs.priceDollar} onChange={e => setInputs({...inputs, priceDollar: e.target.value})} className="w-full bg-[#2c2c2e] border border-gray-600 text-white p-2 rounded-lg text-lg text-center outline-none focus:border-white" />
+                                        {infoBase}
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-400 uppercase font-bold ml-1">Precio Pagando en Bs</label>
+                                        <div className="flex h-[46px] bg-[#2c2c2e] border border-gray-600 rounded-lg overflow-hidden focus-within:border-white">
+                                            <select value={inputs.currency} onChange={e => setInputs({...inputs, currency: e.target.value})} className="bg-[#3a3a3c] text-white px-1 text-xs font-bold border-r border-gray-600 outline-none"><option value="Bs">Bs</option><option value="$">$</option></select>
+                                            <input type="number" placeholder="500" value={inputs.payAmount} onChange={e => setInputs({...inputs, payAmount: e.target.value})} className="w-full bg-transparent text-white p-1 text-lg text-center outline-none" />
+                                        </div>
+                                        {infoPay}
+                                    </div>
+                                </div>
+
+                                {/* Resultado Compacto */}
+                                <div className="flex gap-2 items-stretch h-16 mt-1">
+                                    <div className={`flex-1 rounded-xl border border-dashed border-gray-700 bg-gray-900/50 flex flex-col items-center justify-center relative p-1`}>
+                                        <span className="text-[9px] text-gray-500 uppercase tracking-wider">Tasa Implícita</span>
+                                        {tasaImp > 0 ? (
+                                            <>
+                                                <div className="text-2xl font-bold text-white leading-none">{tasaImp.toFixed(2)} <span className="text-[10px] text-gray-400 font-normal">Bs/$</span></div>
+                                                <div className={`text-[8px] px-1.5 py-0.5 rounded uppercase font-bold mt-1 ${status.color} ${status.bg}`}>{status.text}</div>
+                                            </>
+                                        ) : <span className="text-xl font-bold text-gray-700">--.--</span>}
+                                        
+                                        {/* Botón Log Pequeño FLOTANTE dentro del recuadro */}
+                                        <button id="logIcon" onClick={saveLog} className="absolute right-2 top-2 text-white hover:scale-110 active:scale-95 transition-transform" title="Guardar Log">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-gray-800 my-1"></div>
+
+                                {/* Seccion-010.4: Mini Calculadora */}
+                                <div className="bg-[#1c1c1e] rounded-2xl p-3 border border-gray-800 mt-auto">
+                                    <div className="text-right text-2xl font-light text-white mb-3 h-8 px-2 overflow-hidden">{miniDisp}</div>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {['AC','/','*','-'].map(b => <button key={b} onClick={() => handleMini(b === 'AC' ? 'AC' : isNaN(b) ? b : parseInt(b))} className="h-8 rounded-lg bg-[#333] text-sm text-white mini-btn">{b}</button>)}
+                                        {['7','8','9','+'].map(b => <button key={b} onClick={() => handleMini(parseInt(b))} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">{b}</button>)}
+                                        {/* Botón + especial */}
+                                        <button onClick={() => handleMini('+')} className="col-start-4 row-start-2 h-8 rounded-lg bg-[#ff9f0a] text-sm text-white mini-btn">+</button>
+                                        
+                                        {['4','5','6','='].map(b => {
+                                            if(b==='=') return <button key={b} onClick={() => handleMini('=')} className="h-[72px] row-span-2 col-start-4 row-start-3 rounded-lg bg-[#ff9f0a] text-sm text-white mini-btn">=</button>
+                                            return <button key={b} onClick={() => handleMini(parseInt(b))} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">{b}</button>
+                                        })}
+
+                                        {['1','2','3'].map(b => <button key={b} onClick={() => handleMini(parseInt(b))} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">{b}</button>)}
+                                        
+                                        <button onClick={() => handleMini(0)} className="h-8 col-span-2 rounded-lg bg-[#444] text-sm text-white mini-btn">0</button>
+                                        <button onClick={() => handleMini('.')} className="h-8 rounded-lg bg-[#444] text-sm text-white mini-btn">.</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        };
+
+        /*
+           ==========================================================================
+           GLOSARIO DE SECCIONES (INDICE) - AHORA DENTRO DEL SCRIPT
+           ==========================================================================
+           
+           // Seccion-000: Configuración Inicial y Librerías (HTML Head)
+           // Seccion-001: Estilos CSS Globales y Animaciones 3D
+           // Seccion-002: Componente Principal de React (App)
+           // Seccion-002.1: Definición de Estados (Hooks useState)
+           // Seccion-003: Lógica de Datos (Función fetchRates para la API)
+           // Seccion-004: Efectos Secundarios (useEffect carga inicial)
+           // Seccion-004.1: Lógica de Camuflaje (Trigger '676767')
+           // Seccion-005: Lógica de Negocio (Cálculos de variables activas)
+           // Seccion-006: Componentes de UI Dinámicos (Textos informativos)
+           // Seccion-006.1: Semáforo de Tasas (Lógica de colores y alertas)
+           // Seccion-007: Gestión de Historial (Función saveLog)
+           // Seccion-008: Núcleo de Calculadoras (Función doMath genérica)
+           // Seccion-009: Controladores de Eventos (Handlers handleMain y handleMini)
+           // Seccion-010: Renderizado Visual (Retorno JSX)
+           // Seccion-010.1: Vista Frontal (Calculadora estilo iOS)
+           // Seccion-010.2: Vista Trasera - Header (Barra superior y Ticker)
+           // Seccion-010.3: Vista Trasera - Contenido (Inputs, Resultados, Semáforo)
+           // Seccion-010.4: Vista Trasera - Mini Calculadora
+           // Seccion-011: Renderizado en el DOM (Montaje de React)
+        */
+
+        // Seccion-011: Renderizado en el DOM
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
