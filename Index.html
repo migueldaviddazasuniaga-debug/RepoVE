@@ -73,52 +73,55 @@
             // Log
             const [log, setLog] = useState([]);
             const [showHistory, setShowHistory] = useState(false);
-            // Seccion-003: Lógica de Datos (API)
-            // Obtiene tasas de cambio reales. Si falla, se mantiene en null.
+            
+// Seccion-003: Lógica de Datos (API Nueva y Robusta)
             const fetchRates = async () => {
                 setLoading(true);
-                
-                // Paso 1: Limpiar inputs manuales
+                // Limpiar inputs manuales
                 setInputs(prev => ({...prev, customBcv: '', customParalelo: ''}));
 
                 try {
-                    let dataUSD = [], dataEUR = [];
+                    // Fuente Principal: PyDolarVenezuela (Suele ser más precisa con Binance/Promedio)
+                    const r1 = await fetch('https://pydolarvenezuela-api.vercel.app/api/v1/dollar');
+                    const r2 = await fetch('https://pydolarvenezuela-api.vercel.app/api/v1/euro');
                     
-                    // Intento 1: DolarAPI
-                    try {
-                        const r1 = await fetch('https://ve.dolarapi.com/v1/dolares');
-                        if(r1.ok) dataUSD = await r1.json();
-                    } catch(e) { console.warn("Fallo USD", e); }
+                    if (r1.ok) {
+                        const dataUSD = await r1.json();
+                        const dataEUR = r2.ok ? await r2.json() : null;
+                        
+                        // Mapeo directo de la estructura de PyDolarVenezuela
+                        // monitors: { bcv: {price: ...}, enparalelovzla: {price: ...}, binance: {price: ...} }
+                        const monitors = dataUSD.monitors || {};
+                        const monitorsEUR = dataEUR ? (dataEUR.monitors || {}) : {};
 
-                    try {
-                        const r2 = await fetch('https://ve.dolarapi.com/v1/euros');
-                        if(r2.ok) dataEUR = await r2.json();
-                    } catch(e) { console.warn("Fallo EUR", e); }
-
-                    // Función auxiliar estricta: Sin datos falsos
-                    const getVal = (arr, key) => {
-                        if (!Array.isArray(arr)) return null;
-                        const item = arr.find(d => d.fuente === key || d.titulo === key);
-                        // Solo retorna si es un número válido
-                        return item && item.promedio ? parseFloat(item.promedio) : null;
-                    };
-
-                    setRates({
-                        bcv: getVal(dataUSD, 'oficial'),
-                        paralelo: getVal(dataUSD, 'paralelo'),
-                        binance: getVal(dataUSD, 'Binance'),
-                        promedio: getVal(dataUSD, 'Promedio'),
-                        euro: getVal(dataEUR, 'oficial')
-                    });
+                        setRates({
+                            // BCV
+                            bcv: monitors.bcv?.price || null,
+                            
+                            // Paralelo (Usamos EnParaleloVzla como referencia principal del paralelo)
+                            paralelo: monitors.enparalelovzla?.price || monitors.monitor_dolar_venezuela?.price || null,
+                            
+                            // Binance
+                            binance: monitors.binance?.price || null,
+                            
+                            // Promedio (Usamos el promedio general o fallback a EnParalelo)
+                            promedio: monitors.promedio?.price || monitors.enparalelovzla?.price || null,
+                            
+                            // Euro (BCV Oficial)
+                            euro: monitorsEUR.bcv?.price || null
+                        });
+                    } else {
+                        throw new Error("API Principal falló");
+                    }
 
                 } catch (e) {
-                    console.error("Error Crítico API", e);
-                    // No ponemos datos falsos, dejamos null para que la UI muestre error
+                    console.error("Error API", e);
+                    // Si falla, dejamos en null para mostrar '---' o 'Cargando...'
                 } finally {
                     setLoading(false);
                 }
             };
-
+            
             // Seccion-004: Efectos Secundarios (Hooks)
             // Carga inicial de datos
             useEffect(() => { fetchRates(); }, []);
